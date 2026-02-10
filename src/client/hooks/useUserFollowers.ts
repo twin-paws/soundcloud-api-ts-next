@@ -4,6 +4,27 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudUser, HookResult } from "../../types.js";
 
+/**
+ * Fetch followers of a SoundCloud user.
+ *
+ * @param userId - The user ID. Pass `undefined` to skip the request.
+ * @returns Hook result with `data` as an array of `SoundCloudUser` followers.
+ *
+ * @example
+ * ```tsx
+ * import { useUserFollowers } from "soundcloud-api-ts-next";
+ *
+ * function Followers({ userId }: { userId: number }) {
+ *   const { data: followers, loading } = useUserFollowers(userId);
+ *   if (loading) return <p>Loading...</p>;
+ *   return <p>{followers?.length} followers</p>;
+ * }
+ * ```
+ *
+ * @see {@link useInfiniteUserFollowers} for paginated results
+ * @see {@link useUserFollowings} for who the user follows
+ * @see {@link useFollow} for follow/unfollow actions
+ */
 export function useUserFollowers(
   userId: string | number | undefined,
 ): HookResult<SoundCloudUser[]> {

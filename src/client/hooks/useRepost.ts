@@ -3,7 +3,28 @@
 import { useState, useCallback } from "react";
 import { useSoundCloudContext } from "../provider.js";
 
-/** Hook for repost/unrepost track actions. Requires authentication. */
+/**
+ * Repost or unrepost a SoundCloud track. Requires authentication.
+ *
+ * @returns An object with `repostTrack`, `unrepostTrack`, `loading`, and `error`.
+ *
+ * @example
+ * ```tsx
+ * import { useRepost } from "soundcloud-api-ts-next";
+ *
+ * function RepostButton({ trackId }: { trackId: number }) {
+ *   const { repostTrack, loading } = useRepost();
+ *   return (
+ *     <button onClick={() => repostTrack(trackId)} disabled={loading}>
+ *       🔁 Repost
+ *     </button>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useLike} for liking tracks
+ * @see {@link useFollow} for following users
+ */
 export function useRepost() {
   const { apiPrefix, accessToken } = useSoundCloudContext();
   const [loading, setLoading] = useState(false);

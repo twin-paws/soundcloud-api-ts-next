@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudPlaylist, HookResult } from "../../types.js";
 
+/**
+ * Search SoundCloud playlists by query string.
+ *
+ * @param query - The search query. Pass an empty string to skip the request.
+ * @returns Hook result with `data` as an array of `SoundCloudPlaylist`.
+ *
+ * @example
+ * ```tsx
+ * import { usePlaylistSearch } from "soundcloud-api-ts-next";
+ *
+ * function PlaylistResults({ q }: { q: string }) {
+ *   const { data: playlists, loading } = usePlaylistSearch(q);
+ *   if (loading) return <p>Searching...</p>;
+ *   return <ul>{playlists?.map(p => <li key={p.id}>{p.title}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useInfinitePlaylistSearch} for paginated search
+ * @see {@link usePlaylist} for fetching a single playlist
+ */
 export function usePlaylistSearch(
   query: string,
 ): HookResult<SoundCloudPlaylist[]> {

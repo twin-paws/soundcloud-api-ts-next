@@ -418,6 +418,36 @@ async function handleRoute(
   return errorResponse("Not found", 404);
 }
 
+/**
+ * Create SoundCloud API route handlers for Next.js.
+ *
+ * Returns an object with individual data-fetching methods (e.g. `searchTracks`, `getTrack`)
+ * and catch-all handlers for App Router (`handler()`) and Pages Router (`pagesHandler()`).
+ * Manages client credential tokens automatically.
+ *
+ * @param config - SoundCloud API credentials and optional redirect URI.
+ * @returns An object with route handlers and direct API methods.
+ *
+ * @example
+ * ```ts
+ * // app/api/soundcloud/[...route]/route.ts
+ * import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server";
+ *
+ * const sc = createSoundCloudRoutes({
+ *   clientId: process.env.SC_CLIENT_ID!,
+ *   clientSecret: process.env.SC_CLIENT_SECRET!,
+ *   redirectUri: "http://localhost:3000/api/soundcloud/auth/callback",
+ * });
+ *
+ * const handle = sc.handler();
+ * export const GET = handle;
+ * export const POST = handle;
+ * export const DELETE = handle;
+ * ```
+ *
+ * @see {@link SoundCloudRoutesConfig} for configuration options
+ * @see {@link SoundCloudProvider} for the client-side provider
+ */
 export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
   ctx.config = config;
   // Reset token when config changes

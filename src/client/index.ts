@@ -1,3 +1,17 @@
+/**
+ * Client-side entry point for `soundcloud-api-ts-next`.
+ *
+ * Re-exports the {@link SoundCloudProvider}, all React hooks for fetching
+ * SoundCloud data, authentication, and mutation actions (like, follow, repost).
+ *
+ * @example
+ * ```tsx
+ * import { SoundCloudProvider, useTrack, useTrackSearch } from "soundcloud-api-ts-next";
+ * ```
+ *
+ * @module
+ */
+
 export { SoundCloudProvider, useSoundCloudContext } from "./provider.js";
 export type { SoundCloudProviderProps, SoundCloudContextValue } from "./provider.js";
 export { useTrackSearch } from "./hooks/useTrackSearch.js";

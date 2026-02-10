@@ -4,6 +4,25 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudTrack, HookResult } from "../../types.js";
 
+/**
+ * Fetch tracks related to a given SoundCloud track (recommendations).
+ *
+ * @param trackId - The track ID to find related tracks for. Pass `undefined` to skip.
+ * @returns Hook result with `data` as an array of related `SoundCloudTrack`.
+ *
+ * @example
+ * ```tsx
+ * import { useRelatedTracks } from "soundcloud-api-ts-next";
+ *
+ * function Related({ trackId }: { trackId: number }) {
+ *   const { data: tracks } = useRelatedTracks(trackId);
+ *   return <ul>{tracks?.map(t => <li key={t.id}>{t.title}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useTrack} for fetching the source track
+ * @see {@link useTrackSearch} for search-based discovery
+ */
 export function useRelatedTracks(
   trackId: string | number | undefined,
 ): HookResult<SoundCloudTrack[]> {

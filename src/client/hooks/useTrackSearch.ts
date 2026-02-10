@@ -4,10 +4,35 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudTrack, HookResult } from "../../types.js";
 
+/**
+ * Options for {@link useTrackSearch}.
+ */
 export interface UseTrackSearchOptions {
+  /** Maximum number of results to return. */
   limit?: number;
 }
 
+/**
+ * Search SoundCloud tracks by query string.
+ *
+ * @param query - The search query. Pass an empty string to skip the request.
+ * @param options - Optional search options (e.g. `limit`).
+ * @returns Hook result with `data` as an array of `SoundCloudTrack`.
+ *
+ * @example
+ * ```tsx
+ * import { useTrackSearch } from "soundcloud-api-ts-next";
+ *
+ * function SearchResults({ q }: { q: string }) {
+ *   const { data: tracks, loading } = useTrackSearch(q, { limit: 10 });
+ *   if (loading) return <p>Searching...</p>;
+ *   return <ul>{tracks?.map(t => <li key={t.id}>{t.title}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useInfiniteTrackSearch} for paginated search
+ * @see {@link useTrack} for fetching a single track
+ */
 export function useTrackSearch(
   query: string,
   options?: UseTrackSearchOptions,

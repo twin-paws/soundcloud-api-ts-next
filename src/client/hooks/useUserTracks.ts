@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudTrack, HookResult } from "../../types.js";
 
+/**
+ * Fetch tracks uploaded by a SoundCloud user.
+ *
+ * @param userId - The user ID. Pass `undefined` to skip the request.
+ * @returns Hook result with `data` as an array of `SoundCloudTrack`.
+ *
+ * @example
+ * ```tsx
+ * import { useUserTracks } from "soundcloud-api-ts-next";
+ *
+ * function Tracks({ userId }: { userId: number }) {
+ *   const { data: tracks, loading } = useUserTracks(userId);
+ *   if (loading) return <p>Loading...</p>;
+ *   return <ul>{tracks?.map(t => <li key={t.id}>{t.title}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useInfiniteUserTracks} for paginated results
+ * @see {@link useUser} for the user profile
+ */
 export function useUserTracks(
   userId: string | number | undefined,
 ): HookResult<SoundCloudTrack[]> {

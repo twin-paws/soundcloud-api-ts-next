@@ -3,16 +3,28 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { SoundCloudUser } from "soundcloud-api-ts";
 
+/**
+ * Internal context value shape for the SoundCloud provider.
+ *
+ * @see {@link SoundCloudProvider} for setting up the context
+ * @see {@link useSoundCloudContext} for accessing the context
+ */
 export interface SoundCloudContextValue {
+  /** API route prefix used for all fetch calls (e.g. `"/api/soundcloud"`). */
   apiPrefix: string;
-  // Auth state
+  /** The authenticated user's profile, or `null`. */
   user: SoundCloudUser | null;
+  /** Current OAuth access token, or `null`. */
   accessToken: string | null;
+  /** Whether the user is fully authenticated (has token + profile). */
   isAuthenticated: boolean;
+  /** `true` while the user profile is being loaded after token set. */
   authLoading: boolean;
+  /** Initiate OAuth login — redirects to SoundCloud authorization page. */
   login: () => void;
+  /** Log out and clear all auth state. */
   logout: () => Promise<void>;
-  /** @internal Called by callback handler to set auth tokens */
+  /** @internal Called by callback handler to set auth tokens. */
   _setAuth: (auth: { accessToken: string; refreshToken: string; expiresIn: number }) => void;
 }
 
@@ -27,12 +39,41 @@ const SoundCloudContext = createContext<SoundCloudContextValue>({
   _setAuth: () => {},
 });
 
+/**
+ * Props for the {@link SoundCloudProvider} component.
+ */
 export interface SoundCloudProviderProps {
-  /** API route prefix (default: "/api/soundcloud") */
+  /** API route prefix — must match your server route mount point. Default: `"/api/soundcloud"`. */
   apiPrefix?: string;
+  /** React children to render inside the provider. */
   children: ReactNode;
 }
 
+/**
+ * Provide SoundCloud API context to your React tree.
+ *
+ * Wrap your app (or a subtree) with this provider to enable all SoundCloud hooks.
+ * Manages authentication state and provides the API prefix for route resolution.
+ *
+ * @param props - Provider props including optional `apiPrefix` and `children`.
+ * @returns A React context provider element.
+ *
+ * @example
+ * ```tsx
+ * import { SoundCloudProvider } from "soundcloud-api-ts-next";
+ *
+ * export default function App({ children }: { children: React.ReactNode }) {
+ *   return (
+ *     <SoundCloudProvider apiPrefix="/api/soundcloud">
+ *       {children}
+ *     </SoundCloudProvider>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useSCAuth} for authentication actions
+ * @see {@link useTrack} and other hooks that depend on this provider
+ */
 export function SoundCloudProvider({
   apiPrefix = "/api/soundcloud",
   children,
@@ -130,6 +171,27 @@ export function SoundCloudProvider({
   );
 }
 
+/**
+ * Access the SoundCloud context value (API prefix, auth state, login/logout).
+ *
+ * Must be called within a {@link SoundCloudProvider}. Prefer using higher-level hooks
+ * like {@link useSCAuth} for auth or data hooks like {@link useTrack} for fetching.
+ *
+ * @returns The current {@link SoundCloudContextValue}.
+ *
+ * @example
+ * ```tsx
+ * import { useSoundCloudContext } from "soundcloud-api-ts-next";
+ *
+ * function DebugPanel() {
+ *   const { apiPrefix, isAuthenticated } = useSoundCloudContext();
+ *   return <pre>API: {apiPrefix}, Auth: {String(isAuthenticated)}</pre>;
+ * }
+ * ```
+ *
+ * @see {@link SoundCloudProvider}
+ * @see {@link useSCAuth} for a friendlier auth hook
+ */
 export function useSoundCloudContext(): SoundCloudContextValue {
   return useContext(SoundCloudContext);
 }

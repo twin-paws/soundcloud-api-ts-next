@@ -4,6 +4,32 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { PlayerState } from "../../types.js";
 
+/**
+ * Control audio playback for a SoundCloud track.
+ *
+ * Fetches the stream URL and creates an `HTMLAudioElement` internally.
+ * Provides play/pause/toggle/seek controls and reactive progress/duration state.
+ *
+ * @param trackId - The track ID to stream. Pass `undefined` to stop/skip playback.
+ * @returns A {@link PlayerState} object with playback controls and state.
+ *
+ * @example
+ * ```tsx
+ * import { usePlayer } from "soundcloud-api-ts-next";
+ *
+ * function Player({ trackId }: { trackId: number }) {
+ *   const { playing, progress, duration, toggle, seek } = usePlayer(trackId);
+ *   return (
+ *     <div>
+ *       <button onClick={toggle}>{playing ? "Pause" : "Play"}</button>
+ *       <span>{Math.round(progress)}s / {Math.round(duration)}s</span>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useTrack} for fetching track metadata
+ */
 export function usePlayer(trackId: string | number | undefined): PlayerState {
   const { apiPrefix } = useSoundCloudContext();
   const audioRef = useRef<HTMLAudioElement | null>(null);

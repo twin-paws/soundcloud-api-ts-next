@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudUser, HookResult } from "../../types.js";
 
+/**
+ * Fetch users who liked a SoundCloud track.
+ *
+ * @param trackId - The track ID. Pass `undefined` to skip the request.
+ * @returns Hook result with `data` as an array of `SoundCloudUser` who liked the track.
+ *
+ * @example
+ * ```tsx
+ * import { useTrackLikes } from "soundcloud-api-ts-next";
+ *
+ * function Likers({ trackId }: { trackId: number }) {
+ *   const { data: users, loading } = useTrackLikes(trackId);
+ *   if (loading) return <p>Loading...</p>;
+ *   return <ul>{users?.map(u => <li key={u.id}>{u.username}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useTrack} for the track itself
+ * @see {@link useLike} for liking/unliking a track
+ */
 export function useTrackLikes(
   trackId: string | number | undefined,
 ): HookResult<SoundCloudUser[]> {

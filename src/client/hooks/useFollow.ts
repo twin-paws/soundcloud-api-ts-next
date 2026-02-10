@@ -3,7 +3,28 @@
 import { useState, useCallback } from "react";
 import { useSoundCloudContext } from "../provider.js";
 
-/** Hook for follow/unfollow actions. Requires authentication. */
+/**
+ * Follow or unfollow a SoundCloud user. Requires authentication.
+ *
+ * @returns An object with `follow`, `unfollow`, `loading`, and `error`.
+ *
+ * @example
+ * ```tsx
+ * import { useFollow } from "soundcloud-api-ts-next";
+ *
+ * function FollowButton({ userId }: { userId: number }) {
+ *   const { follow, unfollow, loading } = useFollow();
+ *   return (
+ *     <button onClick={() => follow(userId)} disabled={loading}>
+ *       Follow
+ *     </button>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useUserFollowers} for viewing followers
+ * @see {@link useMeFollowings} for the current user's followings
+ */
 export function useFollow() {
   const { apiPrefix, accessToken } = useSoundCloudContext();
   const [loading, setLoading] = useState(false);

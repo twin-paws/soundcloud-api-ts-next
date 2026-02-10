@@ -3,7 +3,29 @@
 import { useState, useCallback } from "react";
 import { useSoundCloudContext } from "../provider.js";
 
-/** Hook for like/unlike track actions. Requires authentication. */
+/**
+ * Like or unlike a SoundCloud track. Requires authentication.
+ *
+ * @returns An object with `likeTrack`, `unlikeTrack`, `loading`, and `error`.
+ *
+ * @example
+ * ```tsx
+ * import { useLike } from "soundcloud-api-ts-next";
+ *
+ * function LikeButton({ trackId }: { trackId: number }) {
+ *   const { likeTrack, unlikeTrack, loading } = useLike();
+ *   return (
+ *     <button onClick={() => likeTrack(trackId)} disabled={loading}>
+ *       ❤️ Like
+ *     </button>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useTrackLikes} for viewing who liked a track
+ * @see {@link useMeLikes} for the current user's liked tracks
+ * @see {@link useRepost} for reposting tracks
+ */
 export function useLike() {
   const { apiPrefix, accessToken } = useSoundCloudContext();
   const [loading, setLoading] = useState(false);

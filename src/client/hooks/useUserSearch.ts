@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
 import type { SoundCloudUser, HookResult } from "../../types.js";
 
+/**
+ * Search SoundCloud users by query string.
+ *
+ * @param query - The search query. Pass an empty string to skip the request.
+ * @returns Hook result with `data` as an array of `SoundCloudUser`.
+ *
+ * @example
+ * ```tsx
+ * import { useUserSearch } from "soundcloud-api-ts-next";
+ *
+ * function UserResults({ q }: { q: string }) {
+ *   const { data: users, loading } = useUserSearch(q);
+ *   if (loading) return <p>Searching...</p>;
+ *   return <ul>{users?.map(u => <li key={u.id}>{u.username}</li>)}</ul>;
+ * }
+ * ```
+ *
+ * @see {@link useInfiniteUserSearch} for paginated search
+ * @see {@link useUser} for fetching a single user
+ */
 export function useUserSearch(
   query: string,
 ): HookResult<SoundCloudUser[]> {
