@@ -17,3 +17,15 @@ export { usePlaylist } from "./hooks/usePlaylist.js";
 export { usePlaylistTracks } from "./hooks/usePlaylistTracks.js";
 export { usePlaylistSearch } from "./hooks/usePlaylistSearch.js";
 export { useUserSearch } from "./hooks/useUserSearch.js";
+
+// Infinite/paginated hooks
+export { useInfiniteTrackSearch } from "./hooks/useInfiniteTrackSearch.js";
+export { useInfiniteUserSearch } from "./hooks/useInfiniteUserSearch.js";
+export { useInfinitePlaylistSearch } from "./hooks/useInfinitePlaylistSearch.js";
+export { useInfiniteUserTracks } from "./hooks/useInfiniteUserTracks.js";
+export { useInfiniteUserPlaylists } from "./hooks/useInfiniteUserPlaylists.js";
+export { useInfiniteUserLikes } from "./hooks/useInfiniteUserLikes.js";
+export { useInfiniteUserFollowers } from "./hooks/useInfiniteUserFollowers.js";
+export { useInfiniteUserFollowings } from "./hooks/useInfiniteUserFollowings.js";
+export { useInfiniteTrackComments } from "./hooks/useInfiniteTrackComments.js";
+export { useInfinitePlaylistTracks } from "./hooks/useInfinitePlaylistTracks.js";

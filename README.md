@@ -139,6 +139,57 @@ All routes are available via the catch-all handler and as individual methods on 
 | `GET /playlists/:id` | `getPlaylist(id)` | Get playlist details |
 | `GET /playlists/:id/tracks` | `getPlaylistTracks(id)` | Get playlist tracks |
 
+## Pagination / Infinite Scroll
+
+All paginated endpoints have `useInfinite*` hooks that handle cursor-based pagination automatically:
+
+```tsx
+import { useInfiniteTrackSearch } from "soundcloud-api-ts-next";
+
+function TrackList() {
+  const { data, loading, error, hasMore, loadMore } = useInfiniteTrackSearch("lofi");
+
+  return (
+    <div>
+      {data.map((track) => (
+        <div key={track.id}>{track.title}</div>
+      ))}
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error.message}</p>}
+      {hasMore && <button onClick={loadMore}>Load More</button>}
+    </div>
+  );
+}
+```
+
+### Available infinite hooks
+
+| Hook | Description |
+| ---- | ----------- |
+| `useInfiniteTrackSearch(query, options?)` | Paginated track search |
+| `useInfiniteUserSearch(query, options?)` | Paginated user search |
+| `useInfinitePlaylistSearch(query, options?)` | Paginated playlist search |
+| `useInfiniteUserTracks(userId)` | User's tracks |
+| `useInfiniteUserPlaylists(userId)` | User's playlists |
+| `useInfiniteUserLikes(userId)` | User's liked tracks |
+| `useInfiniteUserFollowers(userId)` | User's followers |
+| `useInfiniteUserFollowings(userId)` | User's followings |
+| `useInfiniteTrackComments(trackId)` | Track comments |
+| `useInfinitePlaylistTracks(playlistId)` | Playlist tracks |
+
+All hooks return `InfiniteResult<T>`:
+
+```ts
+interface InfiniteResult<T> {
+  data: T[];        // accumulated items across all pages
+  loading: boolean;
+  error: Error | null;
+  hasMore: boolean;  // true if more pages exist
+  loadMore: () => void;
+  reset: () => void; // clear and refetch from page 1
+}
+```
+
 ## Types
 
 All SoundCloud types are re-exported from `soundcloud-api-ts`:

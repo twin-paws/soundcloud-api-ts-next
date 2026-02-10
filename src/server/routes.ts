@@ -17,6 +17,7 @@ import {
   getPlaylistTracks,
   searchUsers,
   searchPlaylists,
+  scFetchUrl,
 } from "soundcloud-api-ts";
 import type { SoundCloudRoutesConfig } from "../types.js";
 
@@ -54,6 +55,14 @@ function errorResponse(message: string, status: number): Response {
 
 async function handleRoute(pathname: string, url: URL): Promise<Response> {
   const token = await ensureToken();
+
+  // /next?url=<encoded_next_href> — generic next-page fetcher
+  if (pathname === "/next") {
+    const nextUrl = url.searchParams.get("url");
+    if (!nextUrl) return errorResponse("Missing 'url' parameter", 400);
+    const result = await scFetchUrl(nextUrl, token);
+    return jsonResponse(result);
+  }
 
   // /search/playlists?q=...
   if (pathname === "/search/playlists") {

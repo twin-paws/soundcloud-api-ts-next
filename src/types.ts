@@ -26,6 +26,22 @@ export interface HookResult<T> {
   error: Error | null;
 }
 
+/** Infinite/paginated hook return shape. */
+export interface InfiniteResult<T> {
+  /** Accumulated items across all fetched pages. */
+  data: T[];
+  /** True while any page is being fetched. */
+  loading: boolean;
+  /** The last fetch error, if any. */
+  error: Error | null;
+  /** True if a next page is available. */
+  hasMore: boolean;
+  /** Fetch the next page. No-op if loading or no more pages. */
+  loadMore: () => void;
+  /** Clear all data and refetch from the first page. */
+  reset: () => void;
+}
+
 /** Player hook return shape. */
 export interface PlayerState {
   playing: boolean;
