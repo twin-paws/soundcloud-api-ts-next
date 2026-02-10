@@ -6,7 +6,7 @@
 
 React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
-Built on [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts).
+[**API Docs**](https://twin-paws.github.io/soundcloud-api-ts-next/) · Built on [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts).
 
 ## Install
 

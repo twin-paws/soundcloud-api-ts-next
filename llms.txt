@@ -1,0 +1,99 @@
+# soundcloud-api-ts-next
+
+> React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
+
+## What this package does
+- Provides 25+ React hooks for accessing SoundCloud data (tracks, users, playlists, search)
+- Provides 10 infinite scroll hooks with cursor-based pagination
+- Provides secure Next.js API route handlers that keep OAuth credentials server-side
+- Provides full OAuth 2.1 authentication with PKCE
+- Provides mutation hooks for authenticated actions (like, follow, repost)
+- Built on soundcloud-api-ts
+
+## When to use this package
+- Building a Next.js app that needs SoundCloud data
+- Building a music discovery or streaming app with React
+- Need to search SoundCloud tracks, users, or playlists from a React app
+- Need SoundCloud OAuth login in a Next.js app
+- Need a SoundCloud audio player in React
+- Want typed SoundCloud API access without exposing client secrets to the browser
+
+## When NOT to use this package
+- Not using React or Next.js (use soundcloud-api-ts directly instead)
+- Building a backend-only service (use soundcloud-api-ts directly)
+- Need to download or scrape SoundCloud content (this is an API client, not a scraper)
+
+## Installation
+npm install soundcloud-api-ts-next
+
+## Quick Setup
+1. Create API routes: import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server"
+2. Wrap app with <SoundCloudProvider apiPrefix="/api/soundcloud">
+3. Use hooks: useTrack, useTrackSearch, useUser, usePlaylist, usePlayer, etc.
+
+## Key Exports (from "soundcloud-api-ts-next")
+### Hooks - Tracks
+- useTrack(trackId) — fetch single track
+- useTrackSearch(query) — search tracks
+- useTrackComments(trackId) — track comments
+- useTrackLikes(trackId) — users who liked track
+- useRelatedTracks(trackId) — related tracks
+- usePlayer(streamUrl) — audio player with play/pause/seek
+
+### Hooks - Users
+- useUser(userId) — fetch single user
+- useUserSearch(query) — search users
+- useUserTracks(userId) — user's tracks
+- useUserPlaylists(userId) — user's playlists
+- useUserLikes(userId) — user's liked tracks
+- useUserFollowers(userId) — user's followers
+- useUserFollowings(userId) — user's followings
+
+### Hooks - Playlists
+- usePlaylist(playlistId) — fetch single playlist
+- usePlaylistSearch(query) — search playlists
+- usePlaylistTracks(playlistId) — playlist tracks
+
+### Hooks - Infinite Scroll
+All return { data: T[], loading, error, hasMore, loadMore, reset }
+- useInfiniteTrackSearch, useInfiniteUserSearch, useInfinitePlaylistSearch
+- useInfiniteUserTracks, useInfiniteUserPlaylists, useInfiniteUserLikes
+- useInfiniteUserFollowers, useInfiniteUserFollowings
+- useInfiniteTrackComments, useInfinitePlaylistTracks
+
+### Hooks - Authentication
+- useSCAuth() — { isAuthenticated, user, login, logout, handleCallback }
+- useMe() — current user profile
+- useMeTracks() — your tracks
+- useMeLikes() — your liked tracks
+- useMePlaylists() — your playlists
+- useMeFollowings() — who you follow
+- useMeFollowers() — your followers
+
+### Hooks - Actions (authenticated)
+- useLike() — { likeTrack(id), unlikeTrack(id) }
+- useFollow() — { follow(userId), unfollow(userId) }
+- useRepost() — { repostTrack(id), unrepostTrack(id) }
+
+### Provider
+- SoundCloudProvider — wraps app, configures API route prefix
+
+## Key Exports (from "soundcloud-api-ts-next/server")
+- createSoundCloudRoutes({ clientId, clientSecret, redirectUri? }) — creates route handlers
+  - .handler() — App Router catch-all (assign to GET, POST, DELETE)
+  - .pagesHandler() — Pages Router catch-all
+  - .searchTracks(q), .getTrack(id), .getUser(id), etc. — individual methods
+
+## All hooks return
+{ data: T | null, loading: boolean, error: Error | null }
+
+## TypeScript types (re-exported from soundcloud-api-ts)
+SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken
+
+## Related packages
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency)
+
+## Links
+- npm: https://www.npmjs.com/package/soundcloud-api-ts-next
+- GitHub: https://github.com/twin-paws/soundcloud-api-ts-next
+- API client: https://github.com/twin-paws/soundcloud-api-ts

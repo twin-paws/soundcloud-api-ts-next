@@ -1,0 +1,12 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/server.ts"],
+  "out": "docs",
+  "tsconfig": "tsconfig.json",
+  "name": "soundcloud-api-ts-next",
+  "readme": "README.md",
+  "entryPointStrategy": "expand",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "skipErrorChecking": true
+}
