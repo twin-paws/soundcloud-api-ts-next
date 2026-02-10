@@ -1,30 +1,31 @@
 # soundcloud-api-ts-next
 
-Next.js integration for [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — React hooks + secure API route handlers.
+[![npm version](https://img.shields.io/npm/v/soundcloud-api-ts-next)](https://www.npmjs.com/package/soundcloud-api-ts-next)
+[![npm downloads](https://img.shields.io/npm/dm/soundcloud-api-ts-next)](https://www.npmjs.com/package/soundcloud-api-ts-next)
+[![license](https://img.shields.io/npm/l/soundcloud-api-ts-next)](https://github.com/twin-paws/soundcloud-api-ts-next/blob/main/LICENSE)
 
-## Installation
+React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
+
+Built on [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts).
+
+## Install
 
 ```bash
 npm install soundcloud-api-ts-next
-# or
-pnpm add soundcloud-api-ts-next
 ```
 
-## Setup
+## Quick Start
 
-### 1. Server Routes
-
-Create an API route handler that proxies SoundCloud requests (keeps your credentials server-side).
-
-**App Router** (`app/api/soundcloud/[...route]/route.ts`):
+**1. Create API routes** — secrets stay server-side:
 
 ```ts
+// app/api/soundcloud/[...route]/route.ts
 import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server";
 
 const sc = createSoundCloudRoutes({
   clientId: process.env.SOUNDCLOUD_CLIENT_ID!,
   clientSecret: process.env.SOUNDCLOUD_CLIENT_SECRET!,
-  redirectUri: process.env.SOUNDCLOUD_REDIRECT_URI, // Required for OAuth
+  redirectUri: process.env.SOUNDCLOUD_REDIRECT_URI, // for OAuth
 });
 
 const handler = sc.handler();
@@ -33,25 +34,26 @@ export const POST = handler;
 export const DELETE = handler;
 ```
 
-**Pages Router** (`pages/api/soundcloud/[...route].ts`):
+<details>
+<summary>Pages Router setup</summary>
 
 ```ts
+// pages/api/soundcloud/[...route].ts
 import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server";
 
 const sc = createSoundCloudRoutes({
   clientId: process.env.SOUNDCLOUD_CLIENT_ID!,
   clientSecret: process.env.SOUNDCLOUD_CLIENT_SECRET!,
-  redirectUri: process.env.SOUNDCLOUD_REDIRECT_URI,
 });
 
 export default sc.pagesHandler();
 ```
+</details>
 
-### 2. Client Provider
-
-Wrap your app with the `SoundCloudProvider`:
+**2. Add the provider:**
 
 ```tsx
+// app/layout.tsx
 import { SoundCloudProvider } from "soundcloud-api-ts-next";
 
 export default function Layout({ children }) {
@@ -63,29 +65,117 @@ export default function Layout({ children }) {
 }
 ```
 
-## Authentication (OAuth + PKCE)
+**3. Use hooks:**
 
-soundcloud-api-ts-next includes a complete OAuth flow with PKCE for secure user authentication.
+```tsx
+import { useTrackSearch, usePlayer } from "soundcloud-api-ts-next";
 
-### Setup
+function SearchPage() {
+  const { data: tracks, loading } = useTrackSearch("lofi beats");
 
-1. Add `redirectUri` to your server config (see above)
-2. Set your SoundCloud app's redirect URI to match (e.g., `http://localhost:3000/callback`)
+  if (loading) return <p>Searching...</p>;
 
-### Login Flow
+  return tracks?.map((track) => (
+    <div key={track.id}>
+      <p>{track.title} — {track.user.username}</p>
+    </div>
+  ));
+}
+```
+
+---
+
+## Hooks
+
+All hooks return `{ data, loading, error }`.
+
+### Tracks
+
+| Hook | Description |
+|------|-------------|
+| `useTrack(id)` | Single track |
+| `useTrackSearch(query)` | Search tracks |
+| `useTrackComments(id)` | Track comments |
+| `useTrackLikes(id)` | Users who liked a track |
+| `useRelatedTracks(id)` | Related tracks |
+| `usePlayer(streamUrl)` | Audio player — `{ playing, progress, duration, play, pause, toggle, seek }` |
+
+### Users
+
+| Hook | Description |
+|------|-------------|
+| `useUser(id)` | Single user |
+| `useUserSearch(query)` | Search users |
+| `useUserTracks(id)` | User's tracks |
+| `useUserPlaylists(id)` | User's playlists |
+| `useUserLikes(id)` | User's liked tracks |
+| `useUserFollowers(id)` | User's followers |
+| `useUserFollowings(id)` | User's followings |
+
+### Playlists
+
+| Hook | Description |
+|------|-------------|
+| `usePlaylist(id)` | Single playlist |
+| `usePlaylistSearch(query)` | Search playlists |
+| `usePlaylistTracks(id)` | Playlist tracks |
+
+---
+
+## Infinite Scroll
+
+Cursor-based pagination with `loadMore()` and `reset()`. All return `InfiniteResult<T>`:
+
+```ts
+{ data: T[], loading, error, hasMore, loadMore, reset }
+```
+
+```tsx
+import { useInfiniteTrackSearch } from "soundcloud-api-ts-next";
+
+function Feed() {
+  const { data, loading, hasMore, loadMore } = useInfiniteTrackSearch("dubstep");
+
+  return (
+    <>
+      {data.map((track) => <TrackCard key={track.id} track={track} />)}
+      {hasMore && <button onClick={loadMore} disabled={loading}>Load More</button>}
+    </>
+  );
+}
+```
+
+| Hook | Description |
+|------|-------------|
+| `useInfiniteTrackSearch(query)` | Paginated track search |
+| `useInfiniteUserSearch(query)` | Paginated user search |
+| `useInfinitePlaylistSearch(query)` | Paginated playlist search |
+| `useInfiniteUserTracks(id)` | User's tracks |
+| `useInfiniteUserPlaylists(id)` | User's playlists |
+| `useInfiniteUserLikes(id)` | User's liked tracks |
+| `useInfiniteUserFollowers(id)` | User's followers |
+| `useInfiniteUserFollowings(id)` | User's followings |
+| `useInfiniteTrackComments(id)` | Track comments |
+| `useInfinitePlaylistTracks(id)` | Playlist tracks |
+
+---
+
+## Authentication
+
+Full OAuth 2.1 with PKCE. No secrets on the client.
+
+### Login
 
 ```tsx
 import { useSCAuth } from "soundcloud-api-ts-next";
 
 function LoginButton() {
-  const { isAuthenticated, user, login, logout, loading } = useSCAuth();
-
-  if (loading) return <p>Loading...</p>;
+  const { isAuthenticated, user, login, logout } = useSCAuth();
 
   if (isAuthenticated) {
     return (
       <div>
-        <p>Logged in as {user?.username}</p>
+        <p>Welcome, {user?.username}</p>
         <button onClick={logout}>Logout</button>
       </div>
     );
@@ -97,264 +187,117 @@ function LoginButton() {
 
 ### Callback Page
 
-Create a callback page that handles the OAuth redirect:
-
 ```tsx
 // app/callback/page.tsx
 "use client";
-
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSCAuth } from "soundcloud-api-ts-next";
 
-export default function CallbackPage() {
-  const searchParams = useSearchParams();
+export default function Callback() {
+  const params = useSearchParams();
   const router = useRouter();
   const { handleCallback } = useSCAuth();
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
+    const code = params.get("code");
+    const state = params.get("state");
     if (code && state) {
-      handleCallback(code, state).then(() => {
-        router.push("/");
-      });
+      handleCallback(code, state).then(() => router.push("/"));
     }
-  }, [searchParams]);
+  }, [params]);
 
   return <p>Authenticating...</p>;
 }
 ```
 
-### Authenticated User Hooks
+### Authenticated Hooks
 
-These hooks fetch data for the currently logged-in user. They require authentication and automatically pass the access token.
+Available after login. Automatically pass the user's access token.
 
-| Hook | Returns | Description |
-|------|---------|-------------|
-| `useMe()` | `HookResult<SoundCloudUser>` | Current user's profile |
-| `useMeTracks()` | `HookResult<SoundCloudTrack[]>` | Current user's tracks |
-| `useMeLikes()` | `HookResult<SoundCloudTrack[]>` | Current user's liked tracks |
-| `useMePlaylists()` | `HookResult<SoundCloudPlaylist[]>` | Current user's playlists |
-| `useMeFollowings()` | `HookResult<SoundCloudUser[]>` | Who current user follows |
-| `useMeFollowers()` | `HookResult<SoundCloudUser[]>` | Current user's followers |
+| Hook | Description |
+|------|-------------|
+| `useMe()` | Current user profile |
+| `useMeTracks()` | Your tracks |
+| `useMeLikes()` | Your liked tracks |
+| `useMePlaylists()` | Your playlists |
+| `useMeFollowings()` | Who you follow |
+| `useMeFollowers()` | Your followers |
 
-```tsx
-import { useMe, useMeTracks, useMeLikes } from "soundcloud-api-ts-next";
+### Actions
 
-function MyProfile() {
-  const { data: me } = useMe();
-  const { data: tracks } = useMeTracks();
-  const { data: likes } = useMeLikes();
+Mutation hooks for authenticated users.
 
-  if (!me) return null;
-
-  return (
-    <div>
-      <h1>{me.username}</h1>
-      <p>{tracks?.length} tracks, {likes?.length} likes</p>
-    </div>
-  );
-}
-```
-
-### Action Hooks
-
-Mutation hooks for user actions. All require authentication.
-
-| Hook | Methods | Description |
-|------|---------|-------------|
-| `useFollow()` | `follow(userId)`, `unfollow(userId)` | Follow/unfollow a user |
-| `useLike()` | `likeTrack(trackId)`, `unlikeTrack(trackId)` | Like/unlike a track |
-| `useRepost()` | `repostTrack(trackId)`, `unrepostTrack(trackId)` | Repost/unrepost a track |
+| Hook | Methods |
+|------|---------|
+| `useLike()` | `likeTrack(id)`, `unlikeTrack(id)` |
+| `useFollow()` | `follow(userId)`, `unfollow(userId)` |
+| `useRepost()` | `repostTrack(id)`, `unrepostTrack(id)` |
 
 ```tsx
 import { useLike, useFollow } from "soundcloud-api-ts-next";
 
 function TrackActions({ trackId, artistId }) {
-  const { likeTrack, unlikeTrack, loading: likeLoading } = useLike();
-  const { follow, loading: followLoading } = useFollow();
+  const { likeTrack } = useLike();
+  const { follow } = useFollow();
 
   return (
-    <div>
-      <button onClick={() => likeTrack(trackId)} disabled={likeLoading}>
-        ❤️ Like
-      </button>
-      <button onClick={() => follow(artistId)} disabled={followLoading}>
-        ➕ Follow Artist
-      </button>
-    </div>
+    <>
+      <button onClick={() => likeTrack(trackId)}>❤️ Like</button>
+      <button onClick={() => follow(artistId)}>➕ Follow</button>
+    </>
   );
 }
 ```
 
-## Hooks
-
-All hooks return `{ data, loading, error }`.
-
-### Tracks
-
-| Hook | Arguments | Description |
-|------|-----------|-------------|
-| `useTrack(trackId)` | `string \| number \| undefined` | Fetch a single track |
-| `useTrackSearch(query, options?)` | `string`, `{ limit? }` | Search tracks |
-| `useTrackComments(trackId)` | `string \| number \| undefined` | Get track comments |
-| `useTrackLikes(trackId)` | `string \| number \| undefined` | Get users who liked a track |
-| `useRelatedTracks(trackId)` | `string \| number \| undefined` | Get related tracks |
-
-### Users
-
-| Hook | Arguments | Description |
-|------|-----------|-------------|
-| `useUser(userId)` | `string \| number \| undefined` | Fetch a single user |
-| `useUserSearch(query)` | `string` | Search users |
-| `useUserTracks(userId)` | `string \| number \| undefined` | Get a user's tracks |
-| `useUserPlaylists(userId)` | `string \| number \| undefined` | Get a user's playlists |
-| `useUserLikes(userId)` | `string \| number \| undefined` | Get a user's liked tracks |
-| `useUserFollowers(userId)` | `string \| number \| undefined` | Get a user's followers |
-| `useUserFollowings(userId)` | `string \| number \| undefined` | Get a user's followings |
-
-### Playlists
-
-| Hook | Arguments | Description |
-|------|-----------|-------------|
-| `usePlaylist(playlistId)` | `string \| number \| undefined` | Fetch a single playlist |
-| `usePlaylistTracks(playlistId)` | `string \| number \| undefined` | Get tracks in a playlist |
-| `usePlaylistSearch(query)` | `string` | Search playlists |
-
-### Player
-
-| Hook | Arguments | Description |
-|------|-----------|-------------|
-| `usePlayer(streamUrl)` | `string \| undefined` | Audio player with play/pause/seek |
+---
 
 ## Server Routes
 
-All routes are available via the catch-all handler and as individual methods on the routes object.
-
-### Auth Routes
+The catch-all handler exposes these routes automatically:
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/auth/login` | GET | Get SoundCloud OAuth URL (PKCE) |
-| `/auth/callback?code=...&state=...` | GET | Exchange auth code for tokens |
-| `/auth/refresh` | POST | Refresh access token |
-| `/auth/logout` | POST | Sign out / revoke token |
+| `/search/tracks?q=` | GET | Search tracks |
+| `/search/users?q=` | GET | Search users |
+| `/search/playlists?q=` | GET | Search playlists |
+| `/tracks/:id` | GET | Track details |
+| `/tracks/:id/stream` | GET | Stream URLs |
+| `/tracks/:id/comments` | GET | Track comments |
+| `/tracks/:id/likes` | GET | Track likes |
+| `/tracks/:id/related` | GET | Related tracks |
+| `/tracks/:id/like` | POST/DELETE | Like/unlike (auth) |
+| `/tracks/:id/repost` | POST/DELETE | Repost/unrepost (auth) |
+| `/users/:id` | GET | User details |
+| `/users/:id/tracks` | GET | User tracks |
+| `/users/:id/playlists` | GET | User playlists |
+| `/users/:id/likes/tracks` | GET | User likes |
+| `/users/:id/followers` | GET | User followers |
+| `/users/:id/followings` | GET | User followings |
+| `/playlists/:id` | GET | Playlist details |
+| `/playlists/:id/tracks` | GET | Playlist tracks |
+| `/playlists/:id/like` | POST/DELETE | Like/unlike (auth) |
+| `/playlists/:id/repost` | POST/DELETE | Repost/unrepost (auth) |
+| `/me` | GET | Current user (auth) |
+| `/me/tracks` | GET | Your tracks (auth) |
+| `/me/likes` | GET | Your likes (auth) |
+| `/me/playlists` | GET | Your playlists (auth) |
+| `/me/followings` | GET | Your followings (auth) |
+| `/me/followers` | GET | Your followers (auth) |
+| `/me/follow/:userId` | POST/DELETE | Follow/unfollow (auth) |
+| `/auth/login` | GET | OAuth URL (PKCE) |
+| `/auth/callback` | GET | Token exchange |
+| `/auth/refresh` | POST | Refresh token |
+| `/auth/logout` | POST | Sign out |
+| `/next?url=` | GET | Pagination cursor |
 
-### Me Routes (require `Authorization: Bearer <token>` header)
+Routes marked **(auth)** require `Authorization: Bearer <token>` header.
 
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/me` | GET | Current user profile |
-| `/me/tracks` | GET | Current user's tracks |
-| `/me/likes` | GET | Current user's liked tracks |
-| `/me/playlists` | GET | Current user's playlists |
-| `/me/followings` | GET | Who current user follows |
-| `/me/followers` | GET | Current user's followers |
-
-### Action Routes (require `Authorization: Bearer <token>` header)
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/me/follow/:userId` | POST | Follow a user |
-| `/me/follow/:userId` | DELETE | Unfollow a user |
-| `/tracks/:id/like` | POST | Like a track |
-| `/tracks/:id/like` | DELETE | Unlike a track |
-| `/tracks/:id/repost` | POST | Repost a track |
-| `/tracks/:id/repost` | DELETE | Unrepost a track |
-| `/playlists/:id/like` | POST/DELETE | Like/unlike a playlist |
-| `/playlists/:id/repost` | POST/DELETE | Repost/unrepost a playlist |
-
-### Search
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `GET /search/tracks?q=...` | `searchTracks(q, page?)` | Search tracks |
-| `GET /search/users?q=...` | `searchUsers(q)` | Search users |
-| `GET /search/playlists?q=...` | `searchPlaylists(q)` | Search playlists |
-
-### Tracks
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `GET /tracks/:id` | `getTrack(id)` | Get track details |
-| `GET /tracks/:id/stream` | `getTrackStreams(id)` | Get stream URLs |
-| `GET /tracks/:id/comments` | `getTrackComments(id)` | Get track comments |
-| `GET /tracks/:id/likes` | `getTrackLikes(id)` | Get track likes |
-| `GET /tracks/:id/related` | `getRelatedTracks(id)` | Get related tracks |
-
-### Users
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `GET /users/:id` | `getUser(id)` | Get user details |
-| `GET /users/:id/tracks` | `getUserTracks(id, limit?)` | Get user's tracks |
-| `GET /users/:id/playlists` | `getUserPlaylists(id)` | Get user's playlists |
-| `GET /users/:id/likes/tracks` | `getUserLikesTracks(id)` | Get user's liked tracks |
-| `GET /users/:id/followers` | `getFollowers(id)` | Get user's followers |
-| `GET /users/:id/followings` | `getFollowings(id)` | Get user's followings |
-
-### Playlists
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `GET /playlists/:id` | `getPlaylist(id)` | Get playlist details |
-| `GET /playlists/:id/tracks` | `getPlaylistTracks(id)` | Get playlist tracks |
-
-## Pagination / Infinite Scroll
-
-All paginated endpoints have `useInfinite*` hooks that handle cursor-based pagination automatically:
-
-```tsx
-import { useInfiniteTrackSearch } from "soundcloud-api-ts-next";
-
-function TrackList() {
-  const { data, loading, error, hasMore, loadMore } = useInfiniteTrackSearch("lofi");
-
-  return (
-    <div>
-      {data.map((track) => (
-        <div key={track.id}>{track.title}</div>
-      ))}
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error.message}</p>}
-      {hasMore && <button onClick={loadMore}>Load More</button>}
-    </div>
-  );
-}
-```
-
-### Available infinite hooks
-
-| Hook | Description |
-| ---- | ----------- |
-| `useInfiniteTrackSearch(query, options?)` | Paginated track search |
-| `useInfiniteUserSearch(query, options?)` | Paginated user search |
-| `useInfinitePlaylistSearch(query, options?)` | Paginated playlist search |
-| `useInfiniteUserTracks(userId)` | User's tracks |
-| `useInfiniteUserPlaylists(userId)` | User's playlists |
-| `useInfiniteUserLikes(userId)` | User's liked tracks |
-| `useInfiniteUserFollowers(userId)` | User's followers |
-| `useInfiniteUserFollowings(userId)` | User's followings |
-| `useInfiniteTrackComments(trackId)` | Track comments |
-| `useInfinitePlaylistTracks(playlistId)` | Playlist tracks |
-
-All hooks return `InfiniteResult<T>`:
-
-```ts
-interface InfiniteResult<T> {
-  data: T[];        // accumulated items across all pages
-  loading: boolean;
-  error: Error | null;
-  hasMore: boolean;  // true if more pages exist
-  loadMore: () => void;
-  reset: () => void; // clear and refetch from page 1
-}
-```
+---
 
 ## Types
 
-All SoundCloud types are re-exported from `soundcloud-api-ts`:
+Re-exported from [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts):
 
 ```ts
 import type {
@@ -364,11 +307,21 @@ import type {
   SoundCloudComment,
   SoundCloudStreams,
   SoundCloudToken,
-  AuthState,
-  MutationResult,
 } from "soundcloud-api-ts-next";
 ```
+
+---
+
+## Requirements
+
+- **Next.js** 13+ (App Router or Pages Router)
+- **React** 18+
+- **soundcloud-api-ts** installed automatically as a dependency
 
 ## License
 
 MIT
+
+## Related
+
+- [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — The TypeScript-first SoundCloud API client this package is built on
