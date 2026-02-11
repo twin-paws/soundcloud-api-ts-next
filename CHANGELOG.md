@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.3] - 2026-02-10
+
+### Fixed
+- Added `llms.txt`, `llms-full.txt`, and `AGENTS.md` to npm `files` field — these were missing from published packages
+- Updated CHANGELOG with v1.7.1 and v1.7.2 entries
+
+## [1.7.2] - 2026-02-10
+
+### Fixed
+- Added `typesVersions` to `package.json` for compatibility with `moduleResolution: "node"` — fixes `Cannot find module 'soundcloud-api-ts-next/server'` in older TypeScript/Next.js projects
+
+## [1.7.1] - 2026-02-10
+
+### Changed
+- Documentation updates for v1.7.0 features shipped to npm
+- CHANGELOG, README, llms.txt, llms-full.txt all updated with getToken, /resolve, useResolve details
+- Regenerated TypeDoc API docs
+
 ## [1.7.0] - 2026-02-10
 
 ### Added
