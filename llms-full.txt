@@ -33,6 +33,13 @@ npm install soundcloud-api-ts-next
 
 ## Key Exports (from "soundcloud-api-ts-next")
 
+### Hooks - General
+
+```ts
+function useResolve(url: string | undefined): HookResult<any>
+```
+Resolve a SoundCloud URL (e.g. `https://soundcloud.com/artist/track`) to a track, user, or playlist object.
+
 ### Hooks - Tracks
 
 ```ts
@@ -249,13 +256,17 @@ function createSoundCloudRoutes(config: {
   clientId: string;
   clientSecret: string;
   redirectUri?: string;
+  getToken?: () => Promise<string>;  // custom token provider (e.g. Redis, database)
 }): SoundCloudRoutes
 ```
 
 Returns an object with:
 - `.handler()` — App Router catch-all handler (assign to GET, POST, DELETE)
 - `.pagesHandler()` — Pages Router catch-all handler
+- `.resolveUrl(url)` — resolve a SoundCloud URL to an API resource
 - `.searchTracks(q)`, `.getTrack(id)`, `.getUser(id)`, etc. — individual server-side methods
+
+When `getToken` is provided, it replaces the built-in client credentials flow for all public routes. Auth routes (`/me/*`, actions) still use the `Authorization: Bearer` header from the request.
 
 ## Common Types
 
@@ -289,6 +300,7 @@ interface SoundCloudRoutesConfig {
   clientId: string;
   clientSecret: string;
   redirectUri?: string;
+  getToken?: () => Promise<string>;
 }
 
 interface SoundCloudToken {

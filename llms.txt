@@ -32,6 +32,9 @@ npm install soundcloud-api-ts-next
 3. Use hooks: useTrack, useTrackSearch, useUser, usePlaylist, usePlayer, etc.
 
 ## Key Exports (from "soundcloud-api-ts-next")
+### Hooks - General
+- useResolve(url) — resolve a SoundCloud URL to a track, user, or playlist
+
 ### Hooks - Tracks
 - useTrack(trackId) — fetch single track
 - useTrackSearch(query) — search tracks
@@ -79,9 +82,11 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 - SoundCloudProvider — wraps app, configures API route prefix
 
 ## Key Exports (from "soundcloud-api-ts-next/server")
-- createSoundCloudRoutes({ clientId, clientSecret, redirectUri? }) — creates route handlers
+- createSoundCloudRoutes({ clientId, clientSecret, redirectUri?, getToken? }) — creates route handlers
+  - getToken: optional async function returning a token string (for custom token stores like Redis)
   - .handler() — App Router catch-all (assign to GET, POST, DELETE)
   - .pagesHandler() — Pages Router catch-all
+  - .resolveUrl(url) — resolve a SoundCloud URL server-side
   - .searchTracks(q), .getTrack(id), .getUser(id), etc. — individual methods
 
 ## All hooks return

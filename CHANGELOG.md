@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-02-10
+
+### Added
+- **Custom token provider** (`getToken`) on `SoundCloudRoutesConfig` — pass an async function that returns a token instead of using client credentials. Enables apps that store OAuth tokens in Redis, databases, or other external stores.
+- **`/resolve` server route** — resolve SoundCloud URLs (e.g. `https://soundcloud.com/artist/track`) to API resources via `GET /resolve?url=`
+- **`resolveUrl` method** on the object returned by `createSoundCloudRoutes()` for direct server-side URL resolution
+- **`useResolve` hook** — client-side SoundCloud URL resolution
+
 ## [1.6.0] - 2026-02-10
 
 ### Added

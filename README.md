@@ -59,6 +59,30 @@ export default sc.pagesHandler();
 ```
 </details>
 
+<details>
+<summary>Custom token provider (e.g. Redis, database)</summary>
+
+If your app stores OAuth tokens externally instead of using client credentials:
+
+```ts
+import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server";
+import { getRedisClient } from "../lib/redis";
+
+const sc = createSoundCloudRoutes({
+  clientId: process.env.SOUNDCLOUD_CLIENT_ID!,
+  clientSecret: process.env.SOUNDCLOUD_CLIENT_SECRET!,
+  getToken: async () => {
+    const redis = await getRedisClient();
+    return redis.get("soundcloud:access_token");
+  },
+});
+
+export default sc.pagesHandler();
+```
+
+When `getToken` is set, it's called for every public route instead of the built-in client credentials flow. Auth routes (`/me/*`, actions) still use the `Authorization: Bearer` header from the request.
+</details>
+
 **2. Add the provider:**
 
 ```tsx
@@ -97,6 +121,12 @@ function SearchPage() {
 ## Hooks
 
 All hooks return `{ data, loading, error }`.
+
+### General
+
+| Hook | Description |
+|------|-------------|
+| `useResolve(url)` | Resolve a SoundCloud URL to a track, user, or playlist |
 
 ### Tracks
 
@@ -267,6 +297,7 @@ The catch-all handler exposes these routes automatically:
 
 | Route | Method | Description |
 |-------|--------|-------------|
+| `/resolve?url=` | GET | Resolve a SoundCloud URL to an API resource |
 | `/search/tracks?q=` | GET | Search tracks |
 | `/search/users?q=` | GET | Search users |
 | `/search/playlists?q=` | GET | Search playlists |
