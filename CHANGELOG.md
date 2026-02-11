@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 2026-02-10
+
+### Changed
+- Publish via npm Trusted Publishing (OIDC provenance)
+
 ## [1.7.4] - 2026-02-10
 
 ### Fixed
