@@ -1,7 +1,7 @@
 {
   "name": "soundcloud-api-ts-next",
-  "version": "1.4.1",
-  "description": "Next.js integration for soundcloud-api-ts \u2014 React hooks + secure API route handlers",
+  "version": "1.5.0",
+  "description": "Next.js integration for soundcloud-api-ts — React hooks + secure API route handlers",
   "license": "MIT",
   "repository": {
     "type": "git",
