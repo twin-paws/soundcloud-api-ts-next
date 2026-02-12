@@ -6,7 +6,7 @@
 - Provides 25+ React hooks for accessing SoundCloud data (tracks, users, playlists, search)
 - Provides 10 infinite scroll hooks with cursor-based pagination
 - Provides secure Next.js API route handlers that keep OAuth credentials server-side
-- Provides full OAuth 2.1 authentication with PKCE
+- Provides full OAuth 2.1 authentication with PKCE via `secure.soundcloud.com`
 - Provides mutation hooks for authenticated actions (like, follow, repost)
 - Built on soundcloud-api-ts
 

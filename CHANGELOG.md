@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-02-12
+
+### Changed
+
+- Bumped `soundcloud-api-ts` to v1.10.0 — OAuth 2.1 endpoint migration
+  - All auth calls now route to `secure.soundcloud.com` instead of `api.soundcloud.com`
+  - Token endpoint: `secure.soundcloud.com/oauth/token`
+  - Authorize endpoint: `secure.soundcloud.com/authorize`
+- This is a **required upgrade** — SoundCloud is shutting down the old OAuth 2.0 endpoints
+
 ## [1.7.5] - 2026-02-10
 
 ### Changed

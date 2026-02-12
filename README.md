@@ -201,7 +201,7 @@ function Feed() {
 
 ## Authentication
 
-Full OAuth 2.1 with PKCE. No secrets on the client.
+Full OAuth 2.1 with PKCE via `secure.soundcloud.com`. No secrets on the client.
 
 ### Login
 
