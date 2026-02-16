@@ -333,6 +333,34 @@ The catch-all handler exposes these routes automatically:
 
 Routes marked **(auth)** require `Authorization: Bearer <token>` header.
 
+### Route Telemetry
+
+Add observability to your API routes with `onRouteComplete`:
+
+```ts
+import { createSoundCloudRoutes } from "soundcloud-api-ts-next/server";
+
+const sc = createSoundCloudRoutes({
+  clientId: process.env.SC_CLIENT_ID!,
+  clientSecret: process.env.SC_CLIENT_SECRET!,
+  onRouteComplete: (t) => {
+    console.log(`[Route] ${t.method} ${t.route} ${t.status} ${t.durationMs}ms`);
+  },
+});
+```
+
+The `SCRouteTelemetry` object:
+
+| Field | Type | Description |
+|---|---|---|
+| `route` | `string` | Route path (e.g. "/tracks/123") |
+| `method` | `string` | HTTP method |
+| `durationMs` | `number` | Total handler duration |
+| `status` | `number` | HTTP response status |
+| `error` | `string?` | Error message if handler threw |
+
+For per-request SC API telemetry (individual `scFetch` calls), use `SCRequestTelemetry` via the `soundcloud-api-ts` `SoundCloudClient` class directly.
+
 ---
 
 ## Types

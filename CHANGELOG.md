@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-02-15
+
+### Added
+
+- **Route-level telemetry**: New `onRouteComplete` callback on `SoundCloudRoutesConfig` — fires after every API route is handled with `SCRouteTelemetry` (route, method, durationMs, status, error?)
+- Covers both App Router (`handler()`) and Pages Router (`pagesHandler()`)
+- **SC API telemetry passthrough**: New `onRequest` callback on `SoundCloudRoutesConfig` — re-exports `SCRequestTelemetry` from `soundcloud-api-ts` for per-request observability
+- New exported types: `SCRouteTelemetry`, `SCRequestTelemetry`
+
+### Changed
+
+- Bumped `soundcloud-api-ts` to v1.11.0 (adds `onRequest` telemetry hook)
+
+### Example
+
+```ts
+const sc = createSoundCloudRoutes({
+  clientId: process.env.SC_CLIENT_ID!,
+  clientSecret: process.env.SC_CLIENT_SECRET!,
+  onRouteComplete: (t) => console.log(`[Route] ${t.method} ${t.route} ${t.status} ${t.durationMs}ms`),
+});
+```
+
 ## [1.8.0] - 2026-02-12
 
 ### Changed

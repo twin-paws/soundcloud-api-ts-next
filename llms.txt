@@ -82,8 +82,10 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 - SoundCloudProvider — wraps app, configures API route prefix
 
 ## Key Exports (from "soundcloud-api-ts-next/server")
-- createSoundCloudRoutes({ clientId, clientSecret, redirectUri?, getToken? }) — creates route handlers
+- createSoundCloudRoutes({ clientId, clientSecret, redirectUri?, getToken?, onRouteComplete?, onRequest? }) — creates route handlers
   - getToken: optional async function returning a token string (for custom token stores like Redis)
+  - onRouteComplete: optional callback receiving SCRouteTelemetry { route, method, durationMs, status, error? } after every route
+  - onRequest: optional callback receiving SCRequestTelemetry (from soundcloud-api-ts) for per-SC-API-call telemetry
   - .handler() — App Router catch-all (assign to GET, POST, DELETE)
   - .pagesHandler() — Pages Router catch-all
   - .resolveUrl(url) — resolve a SoundCloud URL server-side
@@ -93,7 +95,7 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 { data: T | null, loading: boolean, error: Error | null }
 
 ## TypeScript types (re-exported from soundcloud-api-ts)
-SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken
+SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SCRouteTelemetry, SCRequestTelemetry
 
 ## Related packages
 - soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency)

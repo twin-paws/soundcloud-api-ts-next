@@ -257,6 +257,8 @@ function createSoundCloudRoutes(config: {
   clientSecret: string;
   redirectUri?: string;
   getToken?: () => Promise<string>;  // custom token provider (e.g. Redis, database)
+  onRouteComplete?: (telemetry: SCRouteTelemetry) => void;  // route-level telemetry
+  onRequest?: (telemetry: SCRequestTelemetry) => void;      // per-SC-API-call telemetry
 }): SoundCloudRoutes
 ```
 
@@ -296,11 +298,21 @@ interface PlayerState {
   seek: (time: number) => void;
 }
 
+interface SCRouteTelemetry {
+  route: string;
+  method: string;
+  durationMs: number;
+  status: number;
+  error?: string;
+}
+
 interface SoundCloudRoutesConfig {
   clientId: string;
   clientSecret: string;
   redirectUri?: string;
   getToken?: () => Promise<string>;
+  onRouteComplete?: (telemetry: SCRouteTelemetry) => void;
+  onRequest?: (telemetry: SCRequestTelemetry) => void;
 }
 
 interface SoundCloudToken {

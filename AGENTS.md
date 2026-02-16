@@ -86,6 +86,7 @@ Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 2. **Provider required** — all hooks need `<SoundCloudProvider>` in the component tree.
 3. **API prefix must match** — the `apiPrefix` in the provider must match your route file path.
 4. **Auth hooks need redirectUri** — set `redirectUri` in `createSoundCloudRoutes` config for OAuth flow.
+5. **Route telemetry** — pass `onRouteComplete` in config to get `SCRouteTelemetry` after every API route (route, method, durationMs, status, error?). Works with both App Router and Pages Router handlers.
 
 ## Related Packages
 

@@ -21,6 +21,24 @@ export type {
   SoundCloudActivitiesResponse,
 } from "soundcloud-api-ts";
 
+export type { SCRequestTelemetry } from "soundcloud-api-ts";
+
+/**
+ * Structured telemetry emitted after every Next.js API route is handled.
+ */
+export interface SCRouteTelemetry {
+  /** The route path handled (e.g. "/tracks/123", "/search/tracks") */
+  route: string;
+  /** HTTP method */
+  method: string;
+  /** Total handler duration in milliseconds */
+  durationMs: number;
+  /** HTTP response status code */
+  status: number;
+  /** Error message if the route handler threw */
+  error?: string;
+}
+
 /**
  * Configuration for initializing server-side SoundCloud API route handlers.
  *
@@ -64,6 +82,34 @@ export interface SoundCloudRoutesConfig {
    * ```
    */
   getToken?: () => Promise<string>;
+  /**
+   * Called after every API route is handled with route-level telemetry.
+   * Use for logging, metrics, or observability on the Next.js side.
+   *
+   * @example
+   * ```ts
+   * const sc = createSoundCloudRoutes({
+   *   clientId: process.env.SC_CLIENT_ID!,
+   *   clientSecret: process.env.SC_CLIENT_SECRET!,
+   *   onRouteComplete: (t) => console.log(`[Route] ${t.method} ${t.route} ${t.status} ${t.durationMs}ms`),
+   * });
+   * ```
+   */
+  onRouteComplete?: (telemetry: import("./types.js").SCRouteTelemetry) => void;
+  /**
+   * Passed through to the underlying `scFetch` calls for SC API-level telemetry.
+   * Fires for each individual SoundCloud API request (including retries).
+   *
+   * @example
+   * ```ts
+   * const sc = createSoundCloudRoutes({
+   *   clientId: process.env.SC_CLIENT_ID!,
+   *   clientSecret: process.env.SC_CLIENT_SECRET!,
+   *   onRequest: (t) => console.log(`[SC] ${t.method} ${t.path} ${t.status} ${t.durationMs}ms`),
+   * });
+   * ```
+   */
+  onRequest?: (telemetry: import("soundcloud-api-ts").SCRequestTelemetry) => void;
 }
 
 /**

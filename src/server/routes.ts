@@ -44,7 +44,7 @@ import {
   repostPlaylist,
   unrepostPlaylist,
 } from "soundcloud-api-ts";
-import type { SoundCloudRoutesConfig } from "../types.js";
+import type { SoundCloudRoutesConfig, SCRouteTelemetry } from "../types.js";
 
 interface RouteContext {
   config: SoundCloudRoutesConfig;
@@ -543,11 +543,13 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
      */
     handler() {
       const handle = async (request: Request): Promise<Response> => {
+        const startTime = Date.now();
+        let routePath = "";
         try {
           const url = new URL(request.url);
           // Extract the route portion after /api/soundcloud
           const match = url.pathname.match(/\/api\/soundcloud(\/.*)/);
-          const route = match ? match[1] : url.pathname;
+          routePath = match ? match[1] : url.pathname;
 
           let body: any = undefined;
           if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
@@ -558,9 +560,23 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             }
           }
 
-          return await handleRoute(route, url, request.method, request.headers, body);
+          const response = await handleRoute(routePath, url, request.method, request.headers, body);
+          ctx.config.onRouteComplete?.({
+            route: routePath,
+            method: request.method,
+            durationMs: Date.now() - startTime,
+            status: response.status,
+          });
+          return response;
         } catch (err: any) {
           const status = err?.statusCode ?? 500;
+          ctx.config.onRouteComplete?.({
+            route: routePath,
+            method: request.method,
+            durationMs: Date.now() - startTime,
+            status,
+            error: err?.message,
+          });
           return errorResponse(err?.message ?? "Internal server error", status);
         }
       };
@@ -573,8 +589,10 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
      */
     pagesHandler() {
       return async (req: any, res: any): Promise<void> => {
+        const startTime = Date.now();
+        let routePath = "";
         try {
-          const route = Array.isArray(req.query.route)
+          routePath = Array.isArray(req.query.route)
             ? "/" + req.query.route.join("/")
             : req.url?.replace(/^\/api\/soundcloud/, "") ?? "/";
 
@@ -587,11 +605,24 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             headers.set("authorization", req.headers.authorization);
           }
 
-          const response = await handleRoute(route, url, req.method || "GET", headers, req.body);
+          const response = await handleRoute(routePath, url, req.method || "GET", headers, req.body);
           const body = await response.json();
+          ctx.config.onRouteComplete?.({
+            route: routePath,
+            method: req.method || "GET",
+            durationMs: Date.now() - startTime,
+            status: response.status,
+          });
           res.status(response.status).json(body);
         } catch (err: any) {
           const status = err?.statusCode ?? 500;
+          ctx.config.onRouteComplete?.({
+            route: routePath,
+            method: req.method || "GET",
+            durationMs: Date.now() - startTime,
+            status,
+            error: err?.message,
+          });
           res.status(status).json({ error: err?.message ?? "Internal server error" });
         }
       };
