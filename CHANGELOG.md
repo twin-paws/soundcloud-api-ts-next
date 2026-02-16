@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.2] - 2026-02-15
+
+### Added
+
+- **Telemetry test coverage**: 22 new tests — `onRouteComplete` on success, errors, all auth routes (login/callback/refresh/logout), App Router + Pages Router, authenticated routes, 401/404, no-callback safety, `onRequest` config passthrough, `SCRouteTelemetry` type export verification.
+
 ## [1.9.1] - 2026-02-15
 
 ### Fixed
