@@ -22,5 +22,7 @@
  */
 
 export { createSoundCloudRoutes } from "./routes.js";
-export type { SoundCloudRoutesConfig, SCRouteTelemetry } from "../types.js";
+export { SCAuthManager, createSCAuthManager } from "./auth.js";
+export type { SCAuthManagerConfig, SCLoginResult } from "./auth.js";
+export type { SoundCloudRoutesConfig, SCRouteTelemetry, SoundCloudToken } from "../types.js";
 export type { SCRequestTelemetry } from "soundcloud-api-ts";

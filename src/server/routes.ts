@@ -1,11 +1,9 @@
 import {
   SoundCloudClient,
-  generateCodeVerifier,
-  generateCodeChallenge,
-  getAuthorizationUrl,
   signOut,
 } from "soundcloud-api-ts";
 import type { SoundCloudRoutesConfig, SCRouteTelemetry } from "../types.js";
+import { SCAuthManager } from "./auth.js";
 
 interface RouteContext {
   config: SoundCloudRoutesConfig;
@@ -33,15 +31,19 @@ function getClient(): SoundCloudClient {
   return ctx.client;
 }
 
-// In-memory PKCE verifier store (state → verifier)
-const pkceStore = new Map<string, { verifier: string; createdAt: number }>();
+// PKCE auth manager — initialized lazily when redirectUri is configured
+let authManager: SCAuthManager | null = null;
 
-// Clean up old entries every 10 minutes
-function cleanPkceStore() {
-  const now = Date.now();
-  for (const [key, val] of pkceStore) {
-    if (now - val.createdAt > 600_000) pkceStore.delete(key);
+function getAuthManager(): SCAuthManager {
+  if (!authManager) {
+    if (!ctx.config.redirectUri) throw new Error("redirectUri not configured");
+    authManager = new SCAuthManager({
+      clientId: ctx.config.clientId,
+      clientSecret: ctx.config.clientSecret,
+      redirectUri: ctx.config.redirectUri,
+    });
   }
+  return authManager;
 }
 
 async function ensureToken(): Promise<string> {
@@ -88,15 +90,7 @@ async function handleRoute(
     if (!ctx.config.redirectUri) {
       return errorResponse("redirectUri not configured", 500);
     }
-    cleanPkceStore();
-    const verifier = generateCodeVerifier();
-    const challenge = await generateCodeChallenge(verifier);
-    const state = crypto.randomUUID();
-    pkceStore.set(state, { verifier, createdAt: Date.now() });
-    const authUrl = getAuthorizationUrl(ctx.config.clientId, ctx.config.redirectUri, {
-      state,
-      codeChallenge: challenge,
-    });
+    const { url: authUrl, state } = await getAuthManager().initLogin();
     return jsonResponse({ url: authUrl, state });
   }
 
@@ -108,11 +102,12 @@ async function handleRoute(
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
     if (!code || !state) return errorResponse("Missing code or state parameter", 400);
-    const entry = pkceStore.get(state);
-    if (!entry) return errorResponse("Invalid or expired state", 400);
-    pkceStore.delete(state);
-    const tokens = await getClient().auth.getUserToken(code, entry.verifier);
-    return jsonResponse(tokens);
+    try {
+      const tokens = await getAuthManager().exchangeCode(code, state);
+      return jsonResponse(tokens);
+    } catch {
+      return errorResponse("Invalid or expired state", 400);
+    }
   }
 
   // POST /auth/refresh
@@ -122,8 +117,12 @@ async function handleRoute(
     }
     const refreshTokenValue = body?.refresh_token;
     if (!refreshTokenValue) return errorResponse("Missing refresh_token", 400);
-    const tokens = await getClient().auth.refreshUserToken(refreshTokenValue);
-    return jsonResponse(tokens);
+    try {
+      const tokens = await getAuthManager().refreshToken(refreshTokenValue);
+      return jsonResponse(tokens);
+    } catch {
+      return errorResponse("Failed to refresh token", 400);
+    }
   }
 
   // POST /auth/logout
@@ -429,10 +428,11 @@ async function handleRoute(
  */
 export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
   ctx.config = config;
-  // Reset client and token when config changes
+  // Reset client, token, and auth manager when config changes
   ctx.client = null;
   ctx.token = undefined;
   ctx.tokenExpiry = 0;
+  authManager = null;
 
   return {
     /** Individual route handlers */
