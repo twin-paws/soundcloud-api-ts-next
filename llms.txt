@@ -105,8 +105,31 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 ## TypeScript types (re-exported from soundcloud-api-ts)
 SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SCRouteTelemetry, SCRequestTelemetry
 
+## Underlying client (soundcloud-api-ts v1.13.0+)
+
+This package depends on soundcloud-api-ts ^1.13.0. New capabilities available via the raw client and config:
+
+```ts
+// Pass advanced options through createSoundCloudRoutes → forwarded to SoundCloudClient
+createSoundCloudRoutes({
+  clientId, clientSecret, redirectUri,
+  fetch: customFetch,           // custom fetch (Workers, Bun, Deno)
+  dedupe: true,                 // default on — dedupes concurrent identical GETs
+  cache: myCache,               // SoundCloudCache interface — plug in any backend
+  cacheTtlMs: 30_000,
+  onRetry: (info) => logger.warn('SC retry', info),
+})
+```
+
+New endpoints available via route handlers and hooks (auto-wired):
+- `sc.tracks.getTracks(ids[])` — batch fetch multiple tracks
+- `sc.me.getConnections()` — linked social accounts
+- `sc.raw.get('/any/endpoint/{id}', params)` — escape hatch for any spec endpoint
+
+Auth: see `docs/auth-guide.md` in soundcloud-api-ts for `TokenProvider`/`TokenStore` patterns.
+
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
 
 ## Links
 - npm: https://www.npmjs.com/package/soundcloud-api-ts-next

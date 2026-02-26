@@ -358,7 +358,34 @@ interface SoundCloudRoutesConfig {
   getToken?: () => Promise<string>;
   onRouteComplete?: (telemetry: SCRouteTelemetry) => void;
   onRequest?: (telemetry: SCRequestTelemetry) => void;
+  // soundcloud-api-ts v1.13.0+ options (forwarded to SoundCloudClient)
+  fetch?: typeof globalThis.fetch;          // custom fetch for Workers/Bun/Deno
+  AbortController?: typeof globalThis.AbortController;
+  dedupe?: boolean;                          // default true — dedupes concurrent GETs
+  cache?: SoundCloudCache;                   // plug in any cache backend
+  cacheTtlMs?: number;                       // default 60000ms
+  onRetry?: (info: RetryInfo) => void;       // fires on every retry attempt
 }
+
+// From soundcloud-api-ts v1.13.0 — available via import from 'soundcloud-api-ts'
+interface SoundCloudCache {
+  get<T = unknown>(key: string): Promise<T | undefined> | T | undefined;
+  set<T = unknown>(key: string, value: T, options: { ttlMs: number }): Promise<void> | void;
+  delete(key: string): Promise<void> | void;
+}
+
+interface RetryInfo {
+  attempt: number;
+  delayMs: number;
+  reason: string;
+  status?: number;
+  url: string;
+}
+
+// New endpoints in v1.13.0 (available via routes and directly via soundcloud-api-ts)
+// sc.tracks.getTracks(ids: (string|number)[]) → SoundCloudTrack[]
+// sc.me.getConnections() → SoundCloudConnection[]
+// sc.raw.get(path, params?) → RawResponse<unknown>  (escape hatch for any endpoint)
 
 interface SoundCloudToken {
   access_token: string;
@@ -384,7 +411,7 @@ interface SCLoginResult {
 SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SoundCloudPaginatedResponse, SoundCloudMe, SoundCloudWebProfile, SoundCloudActivity, SoundCloudActivitiesResponse
 
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
 
 ## Links
 - npm: https://www.npmjs.com/package/soundcloud-api-ts-next

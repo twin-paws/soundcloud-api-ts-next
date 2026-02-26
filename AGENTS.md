@@ -88,6 +88,23 @@ Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 4. **Auth hooks need redirectUri** — set `redirectUri` in `createSoundCloudRoutes` config for OAuth flow.
 5. **Route telemetry** — pass `onRouteComplete` in config to get `SCRouteTelemetry` after every API route (route, method, durationMs, status, error?). Works with both App Router and Pages Router handlers.
 
+## Underlying Client (soundcloud-api-ts v1.13.0+)
+
+This package requires `soundcloud-api-ts ^1.13.0`. Key additions available to this package:
+
+- **`sc.tracks.getTracks(ids[])`** — batch fetch multiple tracks by ID
+- **`sc.me.getConnections()`** — list linked social accounts
+- **`sc.raw`** — escape hatch: `sc.raw.get('/any/endpoint/{id}', params)` returns `RawResponse<unknown>`
+- **Fetch injection** — pass `fetch`/`AbortController` in config for Workers/Bun/Deno portability
+- **In-flight deduplication** — `dedupe: true` (default) — concurrent identical GETs share one promise
+- **Cache interface** — pass `cache: SoundCloudCache` to plug in any backend
+- **`onRetry` hook** — `(info: RetryInfo) => void` fires on every retry
+- **`Retry-After` on 429** — honored automatically (capped 60s)
+- **Auth guide** — `node_modules/soundcloud-api-ts/docs/auth-guide.md` covers all flows + 401 troubleshooting
+- **`TokenProvider` / `TokenStore`** — interfaces for pluggable token lifecycle management
+
+All config options are passed through `createSoundCloudRoutes(config)` → forwarded to the underlying `SoundCloudClient`.
+
 ## Related Packages
 
 - [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — The underlying API client (dependency)
