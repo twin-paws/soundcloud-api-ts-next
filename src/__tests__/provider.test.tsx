@@ -5,7 +5,7 @@ import { SoundCloudProvider, useSoundCloudContext } from '../client/provider.js'
 import type { ReactNode } from 'react';
 
 let fetchMock: ReturnType<typeof vi.fn>;
-beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock; });
+beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 function ContextReader() {
@@ -99,7 +99,7 @@ describe('SoundCloudProvider', () => {
     await act(async () => { result.current.login(); });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/auth/login')));
 
-    window.location = originalLocation;
+    Object.defineProperty(window, "location", { value: originalLocation, writable: true, configurable: true });
   });
 
   it('login handles error gracefully', async () => {

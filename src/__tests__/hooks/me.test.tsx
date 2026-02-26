@@ -11,7 +11,7 @@ import { useAuthFetch } from '../../client/hooks/useAuthFetch.js';
 import { type ReactNode } from 'react';
 
 let fetchMock: ReturnType<typeof vi.fn>;
-beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock; });
+beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 // We need a wrapper that can set auth state. We'll use the provider + _setAuth pattern.

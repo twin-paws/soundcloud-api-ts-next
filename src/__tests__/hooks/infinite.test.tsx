@@ -19,7 +19,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 let fetchMock: ReturnType<typeof vi.fn>;
-beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock; });
+beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 function mockOk(data: unknown) {
@@ -66,7 +66,7 @@ describe('useInfinite', () => {
     mockOk({ collection: [{ id: 2 }], next_href: null });
     await act(async () => { result.current.reset(); });
     await waitFor(() => expect(result.current.data).toHaveLength(1));
-    expect(result.current.data[0].id).toBe(2);
+    expect((result.current.data[0] as any).id).toBe(2);
   });
 
   it('skips when null url', () => {

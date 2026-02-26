@@ -14,7 +14,7 @@ let OrigAudio: typeof Audio;
 
 beforeEach(() => {
   fetchMock = vi.fn();
-  globalThis.fetch = fetchMock;
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
   audioInstances = [];
   OrigAudio = globalThis.Audio;
 

@@ -11,7 +11,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 let fetchMock: ReturnType<typeof vi.fn>;
-beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock; });
+beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 function mockAbortable() {

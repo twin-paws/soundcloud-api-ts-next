@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 let fetchMock: ReturnType<typeof vi.fn>;
-beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock; });
+beforeEach(() => { fetchMock = vi.fn(); globalThis.fetch = fetchMock as unknown as typeof fetch; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 async function authenticate(result: any) {
@@ -50,7 +50,7 @@ describe('useFollow', () => {
     await act(async () => { await result.current.hook.follow(42); });
     const call = fetchMock.mock.calls.find((c: any) => c[0].includes('/me/follow/42'));
     expect(call).toBeTruthy();
-    expect(call[1].method).toBe('POST');
+    expect(call![1].method).toBe('POST');
   });
 
   it('unfollow makes DELETE request', async () => {
@@ -109,7 +109,7 @@ describe('useLike', () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await act(async () => { await result.current.hook.likeTrack(10); });
     const call = fetchMock.mock.calls.find((c: any) => c[0].includes('/tracks/10/like'));
-    expect(call[1].method).toBe('POST');
+    expect(call![1].method).toBe('POST');
   });
 
   it('unlikeTrack makes DELETE', async () => {
@@ -168,7 +168,7 @@ describe('useRepost', () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await act(async () => { await result.current.hook.repostTrack(10); });
     const call = fetchMock.mock.calls.find((c: any) => c[0].includes('/tracks/10/repost'));
-    expect(call[1].method).toBe('POST');
+    expect(call![1].method).toBe('POST');
   });
 
   it('unrepostTrack makes DELETE', async () => {
