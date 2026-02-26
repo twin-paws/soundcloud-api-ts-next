@@ -1,4 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ViMockFn = Mock<any>;
 
 const mockClient = {
   auth: {
@@ -88,7 +91,7 @@ function makeAuthReq(path: string, method = 'GET') {
 }
 
 describe('Telemetry: onRouteComplete', () => {
-  let onRouteComplete: ReturnType<typeof vi.fn>;
+  let onRouteComplete: ViMockFn;
   let handle: (request: Request) => Promise<Response>;
   let routes: ReturnType<typeof createSoundCloudRoutes>;
 
@@ -99,7 +102,7 @@ describe('Telemetry: onRouteComplete', () => {
       clientId: 'test_id',
       clientSecret: 'test_secret',
       redirectUri: 'http://localhost:3000/callback',
-      onRouteComplete,
+      onRouteComplete: onRouteComplete as never,
     });
     handle = routes.handler();
   });
@@ -273,7 +276,8 @@ describe('Telemetry: onRouteComplete', () => {
 });
 
 describe('Telemetry: onRequest', () => {
-  let onRequest: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let onRequest: ViMockFn;
   let handle: (request: Request) => Promise<Response>;
 
   beforeEach(() => {
@@ -283,7 +287,7 @@ describe('Telemetry: onRequest', () => {
       clientId: 'test_id',
       clientSecret: 'test_secret',
       redirectUri: 'http://localhost:3000/callback',
-      onRequest,
+      onRequest: onRequest as never,
     });
     handle = routes.handler();
   });
