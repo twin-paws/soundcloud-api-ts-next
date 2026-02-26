@@ -60,7 +60,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "soundcloud-api-ts": "^1.11.3"
+    "soundcloud-api-ts": "^1.13.0"
   },
   "peerDependencies": {
     "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
