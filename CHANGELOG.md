@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-02-26
+
+### Added
+
+- **`useTracks(ids[])`** — batch fetch multiple tracks by ID array. Wraps `sc.tracks.getTracks(ids[])` from soundcloud-api-ts v1.13.0.
+- **`useMeConnections()`** — fetch linked social accounts for the authenticated user. Wraps `sc.me.getConnections()`. Requires user token.
+- **`GET /api/soundcloud/tracks?ids=id1,id2,...`** — batch tracks route. Returns `SoundCloudTrack[]`.
+- **`GET /api/soundcloud/me/connections`** — connections route. Returns `SoundCloudConnection[]`.
+
+### Changed
+
+- Peer dependency: `soundcloud-api-ts` bumped to `^1.13.0`.
+
+### Notes
+
+- `getConnections()` may require elevated SC API access depending on your app permissions.
+- Widget cross-reference docs added (`soundcloud-widget-react` integration patterns).
+
 ## [1.9.4] - 2026-02-23
 
 ### Added
