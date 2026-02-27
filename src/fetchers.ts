@@ -1,4 +1,5 @@
 import { SoundCloudClient } from "soundcloud-api-ts";
+import type { SCRequestTelemetry, RetryInfo } from "soundcloud-api-ts";
 import type {
   SoundCloudTrack,
   SoundCloudUser,
@@ -18,6 +19,10 @@ export interface FetchersConfig {
   clientId: string;
   /** SoundCloud OAuth client secret. */
   clientSecret: string;
+  /** Called after every SoundCloud API request with structured telemetry. */
+  onRequest?: (telemetry: SCRequestTelemetry) => void;
+  /** Called on each retry attempt. */
+  onRetry?: (info: RetryInfo) => void;
 }
 
 let _config: FetchersConfig | null = null;
@@ -59,6 +64,8 @@ function getClient(): SoundCloudClient {
     _client = new SoundCloudClient({
       clientId: _config.clientId,
       clientSecret: _config.clientSecret,
+      onRequest: _config.onRequest,
+      onRetry: _config.onRetry,
     });
   }
   return _client;

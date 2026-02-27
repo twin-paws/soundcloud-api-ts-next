@@ -1,4 +1,5 @@
 import { SoundCloudClient } from "soundcloud-api-ts";
+import type { SCRequestTelemetry, RetryInfo } from "soundcloud-api-ts";
 import type {
   SoundCloudTrack,
   SoundCloudUser,
@@ -23,6 +24,10 @@ export interface ServerHelperConfig {
    * When omitted, the helper uses client credentials (public data only).
    */
   token?: string;
+  /** Called after every SoundCloud API request with structured telemetry. */
+  onRequest?: (telemetry: SCRequestTelemetry) => void;
+  /** Called on each retry attempt. */
+  onRetry?: (info: RetryInfo) => void;
 }
 
 /**
@@ -70,6 +75,8 @@ function makeClient(config: ServerHelperConfig): SoundCloudClient {
   return new SoundCloudClient({
     clientId: config.clientId,
     clientSecret: config.clientSecret,
+    onRequest: config.onRequest,
+    onRetry: config.onRetry,
   });
 }
 

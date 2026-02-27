@@ -1,4 +1,5 @@
 import { SoundCloudClient } from "soundcloud-api-ts";
+import type { SCRequestTelemetry, RetryInfo } from "soundcloud-api-ts";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,16 @@ export interface SoundCloudServerClientConfig {
    * ```
    */
   getToken?: () => string | undefined | Promise<string | undefined>;
+  /**
+   * Called after every SoundCloud API request with structured telemetry.
+   * Useful for logging, metrics, and tracing.
+   * @see {@link SCRequestTelemetry}
+   */
+  onRequest?: (telemetry: SCRequestTelemetry) => void;
+  /**
+   * Called on each retry attempt before the request is retried.
+   */
+  onRetry?: (info: RetryInfo) => void;
 }
 
 /**
@@ -98,6 +109,8 @@ export async function createSoundCloudServerClient(
   const client = new SoundCloudClient({
     clientId: config.clientId,
     clientSecret: config.clientSecret,
+    onRequest: config.onRequest,
+    onRetry: config.onRetry,
   });
 
   const userToken = config.getToken ? await config.getToken() : undefined;
