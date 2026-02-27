@@ -224,6 +224,21 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
 }
 ```
 
+**Cache key helpers** — use `scCacheKeys` (from `/server`) with `revalidateTag` for on-demand invalidation:
+
+```ts
+import { scCacheKeys, getTrack } from "soundcloud-api-ts-next/server";
+
+// Fetch with tag
+const track = await getTrack(trackId, config, { tags: scCacheKeys.track(trackId) });
+
+// Later, invalidate from a Server Action or route handler
+import { revalidateTag } from "next/cache";
+revalidateTag(scCacheKeys.track(trackId)[0]);
+```
+
+`scCacheKeys` produces stable string arrays: `track(id)`, `user(id)`, `playlist(id)`, `searchTracks(q)`, `me()`.
+
 See [`docs/rsc-guide.md`](./docs/rsc-guide.md) for the full guide, including streaming patterns and mixing RSC with client hooks.
 
 ---
@@ -584,4 +599,26 @@ MIT
 
 ## Related
 
-- [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — The TypeScript-first SoundCloud API client this package is built on
+This package is part of the **twin-paws SoundCloud ecosystem**:
+
+| Package | Purpose |
+|---|---|
+| [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) | TypeScript-first SoundCloud API client — the base this package builds on |
+| **soundcloud-api-ts-next** ← you are here | Next.js integration: hooks, secure API routes, OAuth PKCE, RSC helpers |
+| [soundcloud-widget-react](https://github.com/twin-paws/soundcloud-widget-react) | React component for the SoundCloud HTML5 Widget API — embed players and control playback programmatically |
+
+**Common pattern** — combine all three in a Next.js app:
+
+```ts
+// 1. Fetch track data server-side (soundcloud-api-ts-next)
+import { getTrack } from "soundcloud-api-ts-next/server";
+const track = await getTrack(trackId, config, { revalidate: 60 });
+
+// 2. Render an embeddable player (soundcloud-widget-react)
+import { SoundCloudWidget } from "soundcloud-widget-react";
+<SoundCloudWidget url={track.permalinkUrl} onPlay={() => trackPlay(track.id)} />
+
+// 3. React hooks for dynamic data (soundcloud-api-ts-next)
+import { useTrack } from "soundcloud-api-ts-next";
+const { data } = useTrack(trackId); // client-side, post-interaction
+```
