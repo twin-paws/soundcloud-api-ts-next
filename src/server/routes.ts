@@ -59,15 +59,20 @@ async function ensureToken(): Promise<string> {
   return ctx.token;
 }
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(data: unknown, status = 200, extraHeaders?: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
-function errorResponse(message: string, status: number): Response {
-  return jsonResponse({ error: message }, status);
+function routeError(
+  code: string,
+  message: string,
+  status: number,
+  requestId: string,
+): Response {
+  return jsonResponse({ code, message, status, requestId }, status);
 }
 
 function getUserTokenFromHeaders(headers: Headers): string | null {
@@ -76,19 +81,69 @@ function getUserTokenFromHeaders(headers: Headers): string | null {
   return null;
 }
 
+/** Extract the first path segment (e.g. "/tracks/123" → "tracks") */
+function routePrefix(pathname: string): string {
+  return pathname.replace(/^\//, "").split("/")[0] ?? "";
+}
+
+/** Apply CORS headers to a response (returns new Response). */
+function applyCors(
+  response: Response,
+  cors: SoundCloudRoutesConfig["cors"],
+): Response {
+  if (!cors || (!cors.origin && !cors.methods)) return response;
+  const headers = new Headers(response.headers);
+  if (cors.origin) {
+    const origin = Array.isArray(cors.origin) ? cors.origin[0] : cors.origin;
+    headers.set("Access-Control-Allow-Origin", origin);
+  }
+  if (cors.methods) {
+    headers.set("Access-Control-Allow-Methods", cors.methods.join(", "));
+  }
+  return new Response(response.body, { status: response.status, headers });
+}
+
+/** Apply Cache-Control header for GET responses. */
+function applyCacheControl(
+  response: Response,
+  prefix: string,
+  method: string,
+  cacheHeaders: SoundCloudRoutesConfig["cacheHeaders"],
+): Response {
+  if (!cacheHeaders || method !== "GET") return response;
+  const value = cacheHeaders[prefix] ?? cacheHeaders["default"];
+  if (!value) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", value);
+  return new Response(response.body, { status: response.status, headers });
+}
+
 async function handleRoute(
   pathname: string,
   url: URL,
   method: string = "GET",
   headers: Headers = new Headers(),
   body?: any,
+  requestId: string = globalThis.crypto.randomUUID(),
 ): Promise<Response> {
-  // ── Auth routes ──
+  // ── Route filtering (allowlist / denylist) ─────────────────────────────
+  const prefix = routePrefix(pathname);
+  const routesCfg = ctx.config.routes;
+  if (routesCfg) {
+    if (routesCfg.allowlist && !routesCfg.allowlist.includes(prefix)) {
+      return routeError("FORBIDDEN", "Route not enabled", 403, requestId);
+    }
+    if (routesCfg.denylist && routesCfg.denylist.includes(prefix)) {
+      return routeError("FORBIDDEN", "Route not enabled", 403, requestId);
+    }
+  }
+
+  // ── Auth routes ────────────────────────────────────────────────────────
 
   // GET /auth/login
   if (pathname === "/auth/login" && method === "GET") {
     if (!ctx.config.redirectUri) {
-      return errorResponse("redirectUri not configured", 500);
+      return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
     const { url: authUrl, state } = await getAuthManager().initLogin();
     return jsonResponse({ url: authUrl, state });
@@ -97,31 +152,35 @@ async function handleRoute(
   // GET /auth/callback?code=...&state=...
   if (pathname === "/auth/callback" && method === "GET") {
     if (!ctx.config.redirectUri) {
-      return errorResponse("redirectUri not configured", 500);
+      return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
-    if (!code || !state) return errorResponse("Missing code or state parameter", 400);
+    if (!code || !state) {
+      return routeError("BAD_REQUEST", "Missing code or state parameter", 400, requestId);
+    }
     try {
       const tokens = await getAuthManager().exchangeCode(code, state);
       return jsonResponse(tokens);
     } catch {
-      return errorResponse("Invalid or expired state", 400);
+      return routeError("BAD_REQUEST", "Invalid or expired state", 400, requestId);
     }
   }
 
   // POST /auth/refresh
   if (pathname === "/auth/refresh" && method === "POST") {
     if (!ctx.config.redirectUri) {
-      return errorResponse("redirectUri not configured", 500);
+      return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
     const refreshTokenValue = body?.refresh_token;
-    if (!refreshTokenValue) return errorResponse("Missing refresh_token", 400);
+    if (!refreshTokenValue) {
+      return routeError("BAD_REQUEST", "Missing refresh_token", 400, requestId);
+    }
     try {
       const tokens = await getAuthManager().refreshToken(refreshTokenValue);
       return jsonResponse(tokens);
     } catch {
-      return errorResponse("Failed to refresh token", 400);
+      return routeError("BAD_REQUEST", "Failed to refresh token", 400, requestId);
     }
   }
 
@@ -138,57 +197,88 @@ async function handleRoute(
     return jsonResponse({ success: true });
   }
 
-  // ── Authenticated "me" routes ──
+  // ── CSRF protection for mutation action routes ─────────────────────────
+  if (ctx.config.csrfProtection && (method === "POST" || method === "DELETE")) {
+    const isActionPath =
+      /^\/me\/follow\//.test(pathname) ||
+      /^\/tracks\/[^/]+\/(like|repost)$/.test(pathname) ||
+      /^\/playlists\/[^/]+\/(like|repost)$/.test(pathname);
+    if (isActionPath) {
+      const origin = headers.get("origin");
+      if (!origin) {
+        return routeError(
+          "FORBIDDEN",
+          "CSRF protection: missing Origin header",
+          403,
+          requestId,
+        );
+      }
+      const corsOrigin = ctx.config.cors?.origin;
+      if (corsOrigin) {
+        const allowed = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
+        if (!allowed.includes(origin)) {
+          return routeError(
+            "FORBIDDEN",
+            "CSRF protection: Origin not allowed",
+            403,
+            requestId,
+          );
+        }
+      }
+    }
+  }
+
+  // ── Authenticated "me" routes ──────────────────────────────────────────
   const userToken = getUserTokenFromHeaders(headers);
 
   // GET /me
   if (pathname === "/me" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getMe({ token: userToken });
     return jsonResponse(result);
   }
 
   // GET /me/tracks
   if (pathname === "/me/tracks" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getTracks(undefined, { token: userToken });
     return jsonResponse(result);
   }
 
   // GET /me/likes
   if (pathname === "/me/likes" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getLikesTracks(undefined, { token: userToken });
     return jsonResponse(result);
   }
 
   // GET /me/playlists
   if (pathname === "/me/playlists" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getPlaylists(undefined, { token: userToken });
     return jsonResponse(result);
   }
 
   // GET /me/followings
   if (pathname === "/me/followings" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getFollowings(undefined, { token: userToken });
     return jsonResponse(result);
   }
 
   // GET /me/followers
   if (pathname === "/me/followers" && method === "GET") {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const result = await getClient().me.getFollowers(undefined, { token: userToken });
     return jsonResponse(result);
   }
 
-  // ── Action routes (POST/DELETE) ──
+  // ── Action routes (POST/DELETE) ────────────────────────────────────────
 
   // POST|DELETE /me/follow/:userId
   const followMatch = pathname.match(/^\/me\/follow\/([^/]+)$/);
   if (followMatch && (method === "POST" || method === "DELETE")) {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const userId = followMatch[1];
     if (method === "POST") {
       await getClient().me.follow(userId, { token: userToken });
@@ -201,7 +291,7 @@ async function handleRoute(
   // POST|DELETE /tracks/:id/like
   const trackLikeActionMatch = pathname.match(/^\/tracks\/([^/]+)\/like$/);
   if (trackLikeActionMatch && (method === "POST" || method === "DELETE")) {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const trackId = trackLikeActionMatch[1];
     if (method === "POST") {
       await getClient().likes.likeTrack(trackId, { token: userToken });
@@ -214,7 +304,7 @@ async function handleRoute(
   // POST|DELETE /tracks/:id/repost
   const trackRepostMatch = pathname.match(/^\/tracks\/([^/]+)\/repost$/);
   if (trackRepostMatch && (method === "POST" || method === "DELETE")) {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const trackId = trackRepostMatch[1];
     if (method === "POST") {
       await getClient().reposts.repostTrack(trackId, { token: userToken });
@@ -227,7 +317,7 @@ async function handleRoute(
   // POST|DELETE /playlists/:id/like
   const playlistLikeMatch = pathname.match(/^\/playlists\/([^/]+)\/like$/);
   if (playlistLikeMatch && (method === "POST" || method === "DELETE")) {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const playlistId = playlistLikeMatch[1];
     if (method === "POST") {
       await getClient().likes.likePlaylist(playlistId, { token: userToken });
@@ -240,7 +330,7 @@ async function handleRoute(
   // POST|DELETE /playlists/:id/repost
   const playlistRepostMatch = pathname.match(/^\/playlists\/([^/]+)\/repost$/);
   if (playlistRepostMatch && (method === "POST" || method === "DELETE")) {
-    if (!userToken) return errorResponse("Authorization required", 401);
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
     const playlistId = playlistRepostMatch[1];
     if (method === "POST") {
       await getClient().reposts.repostPlaylist(playlistId, { token: userToken });
@@ -250,23 +340,21 @@ async function handleRoute(
     return jsonResponse({ success: true });
   }
 
-  // ── Public routes (use client credentials token) ──
+  // ── Public routes (use client credentials token) ───────────────────────
   const token = await ensureToken();
 
-  // /resolve?url=<soundcloud_url> — resolve a SoundCloud URL to an API resource
+  // /resolve?url=<soundcloud_url>
   if (pathname === "/resolve") {
     const scUrl = url.searchParams.get("url");
-    if (!scUrl) return errorResponse("Missing 'url' parameter", 400);
+    if (!scUrl) return routeError("BAD_REQUEST", "Missing 'url' parameter", 400, requestId);
     const result = await getClient().resolve.resolveUrl(scUrl, { token });
     return jsonResponse(result);
   }
 
-  // /next?url=<encoded_next_href> — generic next-page fetcher
-  // Note: scFetchUrl is used directly here as the client doesn't expose a raw URL fetcher.
-  // Telemetry for this route is covered by onRouteComplete.
+  // /next?url=<encoded_next_href>
   if (pathname === "/next") {
     const nextUrl = url.searchParams.get("url");
-    if (!nextUrl) return errorResponse("Missing 'url' parameter", 400);
+    if (!nextUrl) return routeError("BAD_REQUEST", "Missing 'url' parameter", 400, requestId);
     const { scFetchUrl } = await import("soundcloud-api-ts");
     const result = await scFetchUrl(nextUrl, token);
     return jsonResponse(result);
@@ -275,7 +363,7 @@ async function handleRoute(
   // /search/playlists?q=...
   if (pathname === "/search/playlists") {
     const q = url.searchParams.get("q");
-    if (!q) return errorResponse("Missing query parameter 'q'", 400);
+    if (!q) return routeError("BAD_REQUEST", "Missing query parameter 'q'", 400, requestId);
     const result = await getClient().search.playlists(q, undefined, { token });
     return jsonResponse(result);
   }
@@ -283,7 +371,7 @@ async function handleRoute(
   // /search/users?q=...
   if (pathname === "/search/users") {
     const q = url.searchParams.get("q");
-    if (!q) return errorResponse("Missing query parameter 'q'", 400);
+    if (!q) return routeError("BAD_REQUEST", "Missing query parameter 'q'", 400, requestId);
     const result = await getClient().search.users(q, undefined, { token });
     return jsonResponse(result);
   }
@@ -291,7 +379,7 @@ async function handleRoute(
   // /search/tracks?q=...&limit=...
   if (pathname === "/search/tracks") {
     const q = url.searchParams.get("q");
-    if (!q) return errorResponse("Missing query parameter 'q'", 400);
+    if (!q) return routeError("BAD_REQUEST", "Missing query parameter 'q'", 400, requestId);
     const page = url.searchParams.get("page");
     const result = await getClient().search.tracks(q, page ? parseInt(page, 10) : undefined, { token });
     return jsonResponse(result);
@@ -393,7 +481,7 @@ async function handleRoute(
     return jsonResponse(user);
   }
 
-  return errorResponse("Not found", 404);
+  return routeError("NOT_FOUND", "Not found", 404, requestId);
 }
 
 /**
@@ -403,7 +491,7 @@ async function handleRoute(
  * and catch-all handlers for App Router (`handler()`) and Pages Router (`pagesHandler()`).
  * Manages client credential tokens automatically.
  *
- * @param config - SoundCloud API credentials and optional redirect URI.
+ * @param config - SoundCloud API credentials and optional configuration.
  * @returns An object with route handlers and direct API methods.
  *
  * @example
@@ -512,12 +600,15 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
     handler() {
       const handle = async (request: Request): Promise<Response> => {
         const startTime = Date.now();
+        const requestId = globalThis.crypto.randomUUID();
         let routePath = "";
+        let prefix = "";
         try {
           const url = new URL(request.url);
           // Extract the route portion after /api/soundcloud
           const match = url.pathname.match(/\/api\/soundcloud(\/.*)/);
           routePath = match ? match[1] : url.pathname;
+          prefix = routePrefix(routePath);
 
           let body: any = undefined;
           if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
@@ -528,7 +619,9 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             }
           }
 
-          const response = await handleRoute(routePath, url, request.method, request.headers, body);
+          let response = await handleRoute(routePath, url, request.method, request.headers, body, requestId);
+          response = applyCacheControl(response, prefix, request.method, ctx.config.cacheHeaders);
+          response = applyCors(response, ctx.config.cors);
           ctx.config.onRouteComplete?.({
             route: routePath,
             method: request.method,
@@ -538,6 +631,7 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
           return response;
         } catch (err: any) {
           const status = err?.statusCode ?? 500;
+          const code = status === 404 ? "NOT_FOUND" : "UPSTREAM_ERROR";
           ctx.config.onRouteComplete?.({
             route: routePath,
             method: request.method,
@@ -545,7 +639,12 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             status,
             error: err?.message,
           });
-          return errorResponse(err?.message ?? "Internal server error", status);
+          let errResp = jsonResponse(
+            { code, message: err?.message ?? "Internal server error", status, requestId },
+            status,
+          );
+          errResp = applyCors(errResp, ctx.config.cors);
+          return errResp;
         }
       };
       return handle;
@@ -558,11 +657,14 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
     pagesHandler() {
       return async (req: any, res: any): Promise<void> => {
         const startTime = Date.now();
+        const requestId = globalThis.crypto.randomUUID();
         let routePath = "";
+        let prefix = "";
         try {
           routePath = Array.isArray(req.query.route)
             ? "/" + req.query.route.join("/")
             : req.url?.replace(/^\/api\/soundcloud/, "") ?? "/";
+          prefix = routePrefix(routePath);
 
           const protocol = req.headers["x-forwarded-proto"] || "http";
           const host = req.headers.host || "localhost";
@@ -573,7 +675,8 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             headers.set("authorization", req.headers.authorization);
           }
 
-          const response = await handleRoute(routePath, url, req.method || "GET", headers, req.body);
+          let response = await handleRoute(routePath, url, req.method || "GET", headers, req.body, requestId);
+          response = applyCacheControl(response, prefix, req.method || "GET", ctx.config.cacheHeaders);
           const body = await response.json();
           ctx.config.onRouteComplete?.({
             route: routePath,
@@ -581,9 +684,20 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             durationMs: Date.now() - startTime,
             status: response.status,
           });
+          // Apply CORS headers to pages router res
+          if (ctx.config.cors?.origin) {
+            const origin = Array.isArray(ctx.config.cors.origin)
+              ? ctx.config.cors.origin[0]
+              : ctx.config.cors.origin;
+            res.setHeader("Access-Control-Allow-Origin", origin);
+          }
+          if (ctx.config.cors?.methods) {
+            res.setHeader("Access-Control-Allow-Methods", ctx.config.cors.methods.join(", "));
+          }
           res.status(response.status).json(body);
         } catch (err: any) {
           const status = err?.statusCode ?? 500;
+          const code = status === 404 ? "NOT_FOUND" : "UPSTREAM_ERROR";
           ctx.config.onRouteComplete?.({
             route: routePath,
             method: req.method || "GET",
@@ -591,7 +705,12 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
             status,
             error: err?.message,
           });
-          res.status(status).json({ error: err?.message ?? "Internal server error" });
+          res.status(status).json({
+            code,
+            message: err?.message ?? "Internal server error",
+            status,
+            requestId,
+          });
         }
       };
     },

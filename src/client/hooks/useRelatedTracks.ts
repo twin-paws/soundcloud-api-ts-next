@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { SoundCloudTrack, HookResult } from "../../types.js";
+
+const extractCollection = (json: unknown): SoundCloudTrack[] => {
+  const j = json as { collection?: SoundCloudTrack[] };
+  return j.collection ?? (json as SoundCloudTrack[]);
+};
 
 /**
  * Fetch tracks related to a given SoundCloud track (recommendations).
  *
  * @param trackId - The track ID to find related tracks for. Pass `undefined` to skip.
+ * @param options - Optional fetch options (`enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with `data` as an array of related `SoundCloudTrack`.
  *
  * @example
@@ -25,35 +32,13 @@ import type { SoundCloudTrack, HookResult } from "../../types.js";
  */
 export function useRelatedTracks(
   trackId: string | number | undefined,
+  options?: SCFetchOptions,
 ): HookResult<SoundCloudTrack[]> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<SoundCloudTrack[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (trackId == null) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    fetch(`${apiPrefix}/tracks/${trackId}/related`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json) => setData(json.collection ?? json))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [trackId, apiPrefix]);
-
-  return { data, loading, error };
+  const url =
+    trackId != null ? `${apiPrefix}/tracks/${trackId}/related` : null;
+  return useSCFetch<SoundCloudTrack[]>(url, {
+    ...options,
+    transform: extractCollection,
+  });
 }

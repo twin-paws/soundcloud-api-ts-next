@@ -13,6 +13,8 @@ export type {
   SoundCloudPaginatedResponse,
   /** The authenticated user's profile (extends SoundCloudUser with quota/plan info). */
   SoundCloudMe,
+  /** A linked web service connection (e.g. Twitter, Instagram) returned by `/me/connections`. */
+  SoundCloudConnection,
   /** A user's linked web profile (e.g., Twitter, Instagram). */
   SoundCloudWebProfile,
   /** A single activity item from the user's activity feed. */
@@ -110,6 +112,55 @@ export interface SoundCloudRoutesConfig {
    * ```
    */
   onRequest?: (telemetry: import("soundcloud-api-ts").SCRequestTelemetry) => void;
+  /**
+   * Selective route exposure. Use `allowlist` to only expose specific route prefixes,
+   * or `denylist` to block specific ones. Unlisted routes return 403 when allowlist is set.
+   *
+   * @example
+   * ```ts
+   * routes: { allowlist: ["tracks", "search", "resolve"] }
+   * routes: { denylist: ["me", "auth"] }
+   * ```
+   */
+  routes?: {
+    /** Only expose these route prefixes (e.g. `["tracks", "search"]`). */
+    allowlist?: string[];
+    /** Block these route prefixes (e.g. `["me", "likes"]`). */
+    denylist?: string[];
+  };
+  /**
+   * Set `Cache-Control` headers on GET responses, keyed by route prefix.
+   * Use `"default"` as a fallback for unmatched prefixes.
+   *
+   * @example
+   * ```ts
+   * cacheHeaders: { tracks: "public, max-age=60", me: "no-store", default: "public, max-age=30" }
+   * ```
+   */
+  cacheHeaders?: {
+    [routePrefix: string]: string;
+  };
+  /**
+   * CORS configuration. When set, `Access-Control-Allow-Origin` and
+   * `Access-Control-Allow-Methods` headers are added to responses.
+   *
+   * @example
+   * ```ts
+   * cors: { origin: "https://myapp.com", methods: ["GET", "POST", "DELETE"] }
+   * ```
+   */
+  cors?: {
+    /** Allowed origin(s). Pass a string or array of strings. */
+    origin?: string | string[];
+    /** Allowed HTTP methods (default: inherited from your route exports). */
+    methods?: string[];
+  };
+  /**
+   * When `true`, POST/DELETE mutation routes (like, repost, follow) require a matching
+   * `Origin` header. If `cors.origin` is also set, the Origin must match an allowed origin.
+   * Helps prevent CSRF on action endpoints. Default: `false`.
+   */
+  csrfProtection?: boolean;
 }
 
 /**
@@ -128,6 +179,22 @@ export interface SoundCloudToken {
   token_type: string;
   /** OAuth scope granted. */
   scope: string;
+}
+
+/**
+ * Structured JSON error envelope returned by all route handlers.
+ *
+ * @see {@link createSoundCloudRoutes} for configuration
+ */
+export interface SCRouteError {
+  /** Machine-readable error code (e.g. `"NOT_FOUND"`, `"UNAUTHORIZED"`, `"FORBIDDEN"`). */
+  code: string;
+  /** Human-readable error description. */
+  message: string;
+  /** HTTP status code (mirrors the response status). */
+  status: number;
+  /** Per-request UUID for distributed tracing. */
+  requestId: string;
 }
 
 /**

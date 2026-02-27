@@ -711,7 +711,7 @@ describe('createSoundCloudRoutes', () => {
     const res = await handle(makeReq('/tracks/1'));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('Internal server error');
+    expect(json.message).toBe('Internal server error'); expect(json.code).toBeTruthy(); expect(json.requestId).toBeTruthy();
   });
 
   // ── pagesHandler outer catch (lines 574-579) ──
@@ -743,7 +743,7 @@ describe('createSoundCloudRoutes', () => {
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     await pagesHandle(req, res);
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'bad url' }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'bad url', code: expect.any(String), requestId: expect.any(String) }));
   });
 
   it('pagesHandler catches error without message', async () => {
@@ -759,6 +759,238 @@ describe('createSoundCloudRoutes', () => {
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     await pagesHandle(req, res);
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Internal server error' }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Internal server error', code: expect.any(String) }));
   });
+
+  // ── WS-D: Route filtering ──
+
+  it('allowlist blocks unlisted routes', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      routes: { allowlist: ['search'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('FORBIDDEN');
+    expect(body.requestId).toBeTruthy();
+  });
+
+  it('allowlist permits listed routes', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      routes: { allowlist: ['tracks'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.status).toBe(200);
+  });
+
+  it('denylist blocks listed routes', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      routes: { denylist: ['tracks'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('FORBIDDEN');
+  });
+
+  it('denylist permits non-blocked routes', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      routes: { denylist: ['me'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.status).toBe(200);
+  });
+
+  // ── WS-D: Error envelope ──
+
+  it('error responses have code/message/status/requestId shape', async () => {
+    const res = await handle(makeReq('/unknown'));
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.code).toBe('NOT_FOUND');
+    expect(body.message).toBeTruthy();
+    expect(body.status).toBe(404);
+    expect(body.requestId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('401 error has UNAUTHORIZED code', async () => {
+    const res = await handle(makeReq('/me'));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.requestId).toBeTruthy();
+  });
+
+  it('400 error has BAD_REQUEST code', async () => {
+    const res = await handle(makeReq('/search/tracks'));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.code).toBe('BAD_REQUEST');
+  });
+
+  // ── WS-D: Cache headers ──
+
+  it('sets Cache-Control on GET responses', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cacheHeaders: { tracks: 'public, max-age=60', default: 'public, max-age=10' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=60');
+  });
+
+  it('uses default cache header when prefix not matched', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cacheHeaders: { default: 'public, max-age=5' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=5');
+  });
+
+  it('does not set Cache-Control on POST', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cacheHeaders: { auth: 'no-store' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }));
+    expect(res.headers.get('Cache-Control')).toBeNull();
+  });
+
+  // ── WS-D: CORS ──
+
+  it('adds CORS headers when configured', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cors: { origin: 'https://example.com', methods: ['GET'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
+    expect(res.headers.get('Access-Control-Allow-Methods')).toBe('GET');
+  });
+
+  it('adds CORS to error responses too', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cors: { origin: 'https://example.com' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/unknown'));
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
+  });
+
+  it('handles array cors origin (uses first)', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      cors: { origin: ['https://a.com', 'https://b.com'] },
+    });
+    const h2 = r2.handler();
+    const res = await h2(makeReq('/tracks/1'));
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://a.com');
+  });
+
+  // ── WS-D: CSRF protection ──
+
+  it('blocks mutation without Origin when csrfProtection is true', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      csrfProtection: true,
+    });
+    const h2 = r2.handler();
+    const res = await h2(new Request(`${BASE}/tracks/10/like`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer tok' },
+    }));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('FORBIDDEN');
+    expect(body.message).toContain('Origin');
+  });
+
+  it('allows mutation with correct Origin when csrfProtection is true', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      csrfProtection: true,
+      cors: { origin: 'https://myapp.com' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(new Request(`${BASE}/tracks/10/like`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user_tok', Origin: 'https://myapp.com' },
+    }));
+    expect(res.status).toBe(200);
+  });
+
+  it('blocks mutation with wrong Origin when csrfProtection + cors.origin set', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      csrfProtection: true,
+      cors: { origin: 'https://myapp.com' },
+    });
+    const h2 = r2.handler();
+    const res = await h2(new Request(`${BASE}/tracks/10/like`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user_tok', Origin: 'https://evil.com' },
+    }));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('FORBIDDEN');
+  });
+
+  it('allows mutation with Origin present when csrfProtection=true but no cors.origin', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      csrfProtection: true,
+    });
+    const h2 = r2.handler();
+    const res = await h2(new Request(`${BASE}/tracks/10/like`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user_tok', Origin: 'https://anywhere.com' },
+    }));
+    expect(res.status).toBe(200);
+  });
+
+  it('csrfProtection does not block auth routes', async () => {
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      redirectUri: 'http://localhost:3000/callback',
+      csrfProtection: true,
+    });
+    const h2 = r2.handler();
+    // POST auth/logout without Origin should still work
+    const res = await h2(new Request(`${BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }));
+    expect(res.status).toBe(200);
+  });
+
 });

@@ -44,6 +44,46 @@ export const DELETE = handler;
 ```
 
 <details>
+<summary>Production hardening — allowlist, cache headers, CORS, CSRF</summary>
+
+```ts
+const sc = createSoundCloudRoutes({
+  clientId: process.env.SC_CLIENT_ID!,
+  clientSecret: process.env.SC_CLIENT_SECRET!,
+
+  // Only expose these route prefixes (403 for anything else)
+  routes: {
+    allowlist: ["tracks", "search", "users", "playlists", "me", "auth", "resolve"],
+  },
+
+  // Cache-Control per route prefix (applied to GET responses only)
+  cacheHeaders: {
+    tracks: "public, max-age=60, stale-while-revalidate=300",
+    me: "no-store",
+    default: "public, max-age=30",
+  },
+
+  // CORS — restrict to your origin
+  cors: {
+    origin: process.env.NEXT_PUBLIC_BASE_URL!,
+    methods: ["GET", "POST", "DELETE"],
+  },
+
+  // Block cross-origin state-changing requests
+  csrfProtection: true,
+});
+```
+
+All error responses use a consistent envelope:
+
+```json
+{ "code": "NOT_FOUND", "message": "Not found", "status": 404, "requestId": "..." }
+```
+
+See [`examples/app-router/route.ts`](./examples/app-router/route.ts) for the full example.
+</details>
+
+<details>
 <summary>Pages Router setup</summary>
 
 ```ts
@@ -158,6 +198,67 @@ All hooks return `{ data, loading, error }`.
 | `usePlaylist(id)` | Single playlist |
 | `usePlaylistSearch(query)` | Search playlists |
 | `usePlaylistTracks(id)` | Playlist tracks |
+
+---
+
+## Server Components (RSC)
+
+Use `createSoundCloudServerClient` in React Server Components with optional `next/cache` revalidation:
+
+```ts
+// app/tracks/[id]/page.tsx
+import { createSoundCloudServerClient } from "soundcloud-api-ts-next/server";
+
+const sc = createSoundCloudServerClient({
+  clientId: process.env.SC_CLIENT_ID!,
+  clientSecret: process.env.SC_CLIENT_SECRET!,
+});
+
+export default async function TrackPage({ params }: { params: { id: string } }) {
+  const track = await sc.tracks.getTrack(Number(params.id), {
+    revalidate: 60,
+    tags: [`track-${params.id}`],
+  });
+
+  return <h1>{track.title}</h1>;
+}
+```
+
+See [`docs/rsc-guide.md`](./docs/rsc-guide.md) for the full guide, including streaming patterns and mixing RSC with client hooks.
+
+---
+
+## TanStack Query / SWR
+
+Use `scFetchers` and `scKeys` for integration with TanStack Query or SWR:
+
+```tsx
+import { useQuery } from "@tanstack/react-query";
+import { scFetchers, scKeys } from "soundcloud-api-ts-next";
+
+function TrackCard({ id }: { id: number }) {
+  const { data } = useQuery({
+    queryKey: scKeys.track(id),
+    queryFn: () => scFetchers.track(id),
+  });
+  return <h1>{data?.title}</h1>;
+}
+```
+
+```tsx
+// SWR
+import useSWR from "swr";
+import { scFetchers, scKeys } from "soundcloud-api-ts-next";
+
+function TrackCard({ id }: { id: number }) {
+  const { data } = useSWR(scKeys.track(id), () => scFetchers.track(id));
+  return <h1>{data?.title}</h1>;
+}
+```
+
+`scKeys` produces stable array keys (`["sc", "track", "123"]`) for cache invalidation across queries. `scFetchers` are plain async functions — no React dependency.
+
+See [`docs/tanstack-query.md`](./docs/tanstack-query.md) for RSC prefetch patterns, authenticated queries, and SWR examples.
 
 ---
 
@@ -377,6 +478,8 @@ scAuth.pendingLogins: number                       // active PKCE entries (for o
 ```
 
 > **vs HTTP routes:** The `/auth/login` and `/auth/callback` HTTP routes still work and are the right choice for simple client-side flows where you just need tokens returned as JSON. `SCAuthManager` is for when you need to run server-side code between "got tokens" and "user is logged in".
+
+> **Distributed deployments:** In serverless or edge environments (Vercel, Cloudflare Workers) where in-memory state doesn't persist across invocations, replace the default in-memory PKCE store with `CookiePkceStore`. See [`docs/auth-distributed.md`](./docs/auth-distributed.md) for setup and cookie security options.
 
 ---
 

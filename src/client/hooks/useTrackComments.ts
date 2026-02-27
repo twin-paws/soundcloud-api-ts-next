@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { SoundCloudComment, HookResult } from "../../types.js";
+
+const extractCollection = (json: unknown): SoundCloudComment[] => {
+  const j = json as { collection?: SoundCloudComment[] };
+  return j.collection ?? (json as SoundCloudComment[]);
+};
 
 /**
  * Fetch comments on a SoundCloud track.
  *
  * @param trackId - The track ID. Pass `undefined` to skip the request.
+ * @param options - Optional fetch options (`enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with `data` as an array of `SoundCloudComment`.
  *
  * @example
@@ -26,35 +33,13 @@ import type { SoundCloudComment, HookResult } from "../../types.js";
  */
 export function useTrackComments(
   trackId: string | number | undefined,
+  options?: SCFetchOptions,
 ): HookResult<SoundCloudComment[]> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<SoundCloudComment[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (trackId == null) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    fetch(`${apiPrefix}/tracks/${trackId}/comments`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json) => setData(json.collection ?? json))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [trackId, apiPrefix]);
-
-  return { data, loading, error };
+  const url =
+    trackId != null ? `${apiPrefix}/tracks/${trackId}/comments` : null;
+  return useSCFetch<SoundCloudComment[]>(url, {
+    ...options,
+    transform: extractCollection,
+  });
 }

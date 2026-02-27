@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { HookResult } from "../../types.js";
 
 /**
@@ -11,6 +12,7 @@ import type { HookResult } from "../../types.js";
  * and get back the resolved API resource (track, user, or playlist object).
  *
  * @param url - A SoundCloud URL to resolve. Pass `undefined` to skip the request.
+ * @param options - Optional fetch options (`enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with the resolved resource as `data`, plus `loading` and `error` states.
  *
  * @example
@@ -25,37 +27,12 @@ import type { HookResult } from "../../types.js";
  * }
  * ```
  */
-export function useResolve(url: string | undefined): HookResult<any> {
+export function useResolve(
+  url: string | undefined,
+  options?: SCFetchOptions,
+): HookResult<unknown> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (url == null) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    fetch(`${apiPrefix}/resolve?url=${encodeURIComponent(url)}`, {
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(setData)
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [url, apiPrefix]);
-
-  return { data, loading, error };
+  const fetchUrl =
+    url != null ? `${apiPrefix}/resolve?url=${encodeURIComponent(url)}` : null;
+  return useSCFetch<unknown>(fetchUrl, options);
 }
