@@ -128,6 +128,27 @@ New endpoints available via route handlers and hooks (auto-wired):
 
 Auth: see `docs/auth-guide.md` in soundcloud-api-ts for `TokenProvider`/`TokenStore` patterns.
 
+## Auth Stores (soundcloud-api-ts-next/server + main)
+PkceStore interface: { set(state, verifier, ttlMs): void | Promise<void>; get(state): string | undefined | Promise<...>; delete(state): void | Promise<void> }
+MemoryPkceStore — default in-memory (exported from main entrypoint)
+CookiePkceStore({ secret, cookieName? }) — signed HMAC-SHA256 cookie store (exported from main entrypoint)
+  .setCookieHeader(state, verifier): string
+  .getFromRequest(req: Request): Map<string, string>
+
+## Server Helpers (soundcloud-api-ts-next/server)
+createSoundCloudServerClient({ clientId, clientSecret, getToken? }): SoundCloudClient
+getTrack(id, config, cacheOptions?)
+searchTracks(query, config, cacheOptions?)
+getUser(id, config, cacheOptions?)
+getPlaylist(id, config, cacheOptions?)
+getMe(config, cacheOptions?)
+scCacheKeys.track(id) / .user(id) / .playlist(id) / .searchTracks(q) / .me()
+cacheOptions: { revalidate?: number | false; tags?: string[] }
+
+## Docs
+docs/auth-distributed.md — single-instance vs serverless/multi-region guidance
+docs/rsc-guide.md — App Router RSC patterns, caching, revalidateTag
+
 ## Related packages
 - soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
 
