@@ -126,6 +126,45 @@ Import from `soundcloud-api-ts-next/server`:
 
 See `docs/rsc-guide.md`.
 
+## Headless Fetchers + Query Keys (v1.12.0+)
+
+```ts
+import { configureFetchers, scFetchers, scKeys } from 'soundcloud-api-ts-next';
+
+// One-time setup (e.g. in lib/soundcloud.ts)
+configureFetchers({ clientId: process.env.SC_CLIENT_ID, clientSecret: process.env.SC_CLIENT_SECRET });
+
+// With TanStack Query
+useQuery({ queryKey: scKeys.track(id), queryFn: () => scFetchers.track(id) });
+
+// With SWR
+useSWR(scKeys.track(id), () => scFetchers.track(id));
+```
+
+No TanStack Query or SWR dependency. See `docs/tanstack-query.md`.
+
+## Route Config (v1.12.0+)
+
+```ts
+createSoundCloudRouteHandler({
+  clientId, clientSecret,
+  routes: { allowlist: ['tracks', 'search', 'resolve'] },
+  cacheHeaders: { tracks: 'public, max-age=60', me: 'no-store', default: 'public, max-age=30' },
+  cors: { origin: 'https://myapp.com' },
+  csrfProtection: true,  // verifies Origin on mutations
+})
+```
+
+Error envelope: `{ code: string, message: string, status: number, requestId: string }`
+
+## App Router Example
+
+See `examples/app-router/` for a complete reference implementation:
+- `route.ts` — catch-all handler with allowlist + cache headers
+- `TrackPage.tsx` — RSC using `getTrack()` server helper
+- `TrackClient.tsx` — client component using `useTrack()` hook
+- `auth/callback/route.ts` — OAuth callback with `CookiePkceStore`
+
 ## Related Packages
 
 - [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — The underlying API client (dependency)

@@ -149,6 +149,33 @@ cacheOptions: { revalidate?: number | false; tags?: string[] }
 docs/auth-distributed.md — single-instance vs serverless/multi-region guidance
 docs/rsc-guide.md — App Router RSC patterns, caching, revalidateTag
 
+## Headless Fetchers
+configureFetchers({ clientId, clientSecret }): void  // call once at app startup
+scFetchers.track(id, token?) / .tracks(ids[], token?) / .user(id, token?) / .playlist(id, token?)
+scFetchers.searchTracks(q, limit?, token?) / .searchUsers(q, limit?, token?)
+scFetchers.me(token) / .meConnections(token) / .resolve(url, token?)
+
+## Query Keys
+scKeys.all() / .track(id) / .tracks(ids[]) / .user(id) / .playlist(id)
+scKeys.searchTracks(q, limit?) / .searchUsers(q, limit?) / .me() / .meConnections()
+
+## Hook Options (all hooks)
+enabled?: boolean — skip fetch when false
+refreshInterval?: number — re-poll interval in ms (clears on unmount)
+retry?: number — retry on error with exponential backoff (default 0)
+Client-side dedup: concurrent calls with same args share one in-flight promise
+
+## Route Handler Config
+routes.allowlist?: string[]  — only expose listed route prefixes
+routes.denylist?: string[]   — block listed route prefixes
+cacheHeaders?: { [routePrefix]: string; default?: string }  — Cache-Control per route
+cors?: { origin?: string | string[]; methods?: string[] }
+csrfProtection?: boolean  — verify Origin on mutations (default false)
+
+## Error Envelope
+All routes: { code: string, message: string, status: number, requestId: string }
+Codes: NOT_FOUND | UNAUTHORIZED | UPSTREAM_ERROR | FORBIDDEN | BAD_REQUEST
+
 ## Related packages
 - soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
 
