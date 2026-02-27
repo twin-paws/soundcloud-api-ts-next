@@ -1,22 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { SoundCloudTrack, HookResult } from "../../types.js";
 
 /**
  * Options for {@link useTrackSearch}.
  */
-export interface UseTrackSearchOptions {
+export interface UseTrackSearchOptions extends SCFetchOptions {
   /** Maximum number of results to return. */
   limit?: number;
 }
+
+const extractCollection = (json: unknown): SoundCloudTrack[] => {
+  const j = json as { collection?: SoundCloudTrack[] };
+  return j.collection ?? (json as SoundCloudTrack[]);
+};
 
 /**
  * Search SoundCloud tracks by query string.
  *
  * @param query - The search query. Pass an empty string to skip the request.
- * @param options - Optional search options (e.g. `limit`).
+ * @param options - Optional search options (e.g. `limit`, `enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with `data` as an array of `SoundCloudTrack`.
  *
  * @example
@@ -38,38 +44,11 @@ export function useTrackSearch(
   options?: UseTrackSearchOptions,
 ): HookResult<SoundCloudTrack[]> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<SoundCloudTrack[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!query) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    const params = new URLSearchParams({ q: query });
-    if (options?.limit) params.set("limit", String(options.limit));
-
-    fetch(`${apiPrefix}/search/tracks?${params}`, {
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json) => setData(json.collection ?? json))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [query, options?.limit, apiPrefix]);
-
-  return { data, loading, error };
+  const params = new URLSearchParams({ q: query });
+  if (options?.limit) params.set("limit", String(options.limit));
+  const url = query ? `${apiPrefix}/search/tracks?${params}` : null;
+  return useSCFetch<SoundCloudTrack[]>(url, {
+    ...options,
+    transform: extractCollection,
+  });
 }

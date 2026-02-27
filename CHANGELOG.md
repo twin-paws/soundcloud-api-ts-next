@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-02-26
+
+### Added
+- **`scFetchers`** — headless async fetchers: `track`, `tracks`, `user`, `playlist`, `searchTracks`, `searchUsers`, `me`, `meConnections`, `resolve`. Call `configureFetchers({ clientId, clientSecret })` once at app startup. Exported from main entrypoint.
+- **`scKeys`** — TanStack Query / SWR compatible query key factories: `all`, `track`, `tracks`, `user`, `playlist`, `searchTracks`, `searchUsers`, `me`, `meConnections`. Exported from main entrypoint.
+- **Hook options** — all hooks now accept `enabled?: boolean`, `refreshInterval?: number`, `retry?: number` (exponential backoff).
+- **Client-side hook dedup** — concurrent calls with identical args share a single in-flight promise.
+- **Route config** — `createSoundCloudRouteHandler` now accepts `routes.allowlist`, `routes.denylist`, `cacheHeaders`, `cors`, `csrfProtection`.
+- **Consistent error envelope** — all routes return `{ code, message, status, requestId }` on error. `requestId` is a `crypto.randomUUID()` per request.
+- **`examples/app-router/`** — full App Router example: RSC track page, client hook component, OAuth login flow, `CookiePkceStore` auth callback, route handler with config.
+- **`docs/tanstack-query.md`** — drop-in usage with TanStack Query and SWR using `scFetchers` + `scKeys`.
+
+### Changed
+- Route handler returns structured error envelope on all error paths (previously inconsistent).
+
 ## [1.11.0] - 2026-02-26
 
 ### Added

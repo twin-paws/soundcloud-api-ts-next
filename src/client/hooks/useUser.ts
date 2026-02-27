@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { SoundCloudUser, HookResult } from "../../types.js";
 
 /**
  * Fetch a single SoundCloud user profile by ID.
  *
  * @param userId - The SoundCloud user ID. Pass `undefined` to skip the request.
+ * @param options - Optional fetch options (`enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with `data` as a `SoundCloudUser`, plus `loading` and `error` states.
  *
  * @example
@@ -27,35 +29,9 @@ import type { SoundCloudUser, HookResult } from "../../types.js";
  */
 export function useUser(
   userId: string | number | undefined,
+  options?: SCFetchOptions,
 ): HookResult<SoundCloudUser> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<SoundCloudUser | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (userId == null) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    fetch(`${apiPrefix}/users/${userId}`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(setData)
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [userId, apiPrefix]);
-
-  return { data, loading, error };
+  const url = userId != null ? `${apiPrefix}/users/${userId}` : null;
+  return useSCFetch<SoundCloudUser>(url, options);
 }

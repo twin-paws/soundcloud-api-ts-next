@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSoundCloudContext } from "../provider.js";
+import { useSCFetch } from "./_useSCFetch.js";
+import type { SCFetchOptions } from "./_useSCFetch.js";
 import type { SoundCloudPlaylist, HookResult } from "../../types.js";
+
+const extractCollection = (json: unknown): SoundCloudPlaylist[] => {
+  const j = json as { collection?: SoundCloudPlaylist[] };
+  return j.collection ?? (json as SoundCloudPlaylist[]);
+};
 
 /**
  * Search SoundCloud playlists by query string.
  *
  * @param query - The search query. Pass an empty string to skip the request.
+ * @param options - Optional fetch options (`enabled`, `refreshInterval`, `retry`).
  * @returns Hook result with `data` as an array of `SoundCloudPlaylist`.
  *
  * @example
@@ -26,37 +33,13 @@ import type { SoundCloudPlaylist, HookResult } from "../../types.js";
  */
 export function usePlaylistSearch(
   query: string,
+  options?: SCFetchOptions,
 ): HookResult<SoundCloudPlaylist[]> {
   const { apiPrefix } = useSoundCloudContext();
-  const [data, setData] = useState<SoundCloudPlaylist[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!query) {
-      setData(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    const params = new URLSearchParams({ q: query });
-
-    fetch(`${apiPrefix}/search/playlists?${params}`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json) => setData(json.collection ?? json))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [query, apiPrefix]);
-
-  return { data, loading, error };
+  const params = new URLSearchParams({ q: query });
+  const url = query ? `${apiPrefix}/search/playlists?${params}` : null;
+  return useSCFetch<SoundCloudPlaylist[]>(url, {
+    ...options,
+    transform: extractCollection,
+  });
 }
