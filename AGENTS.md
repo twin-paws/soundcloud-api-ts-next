@@ -105,6 +105,27 @@ This package requires `soundcloud-api-ts ^1.13.0`. Key additions available to th
 
 All config options are passed through `createSoundCloudRoutes(config)` → forwarded to the underlying `SoundCloudClient`.
 
+## Auth Stores (v1.11.0+)
+
+`PkceStore` interface (`src/auth/stores/`) — pluggable PKCE verifier store:
+- `MemoryPkceStore` — default, in-process (breaks on serverless/multi-instance)
+- `CookiePkceStore` — signed HMAC-SHA256 cookie store. Best for Vercel. Accepts `{ secret: string, cookieName?: string }`. Use `setCookieHeader()` + `getFromRequest(req)` helpers.
+- Custom: implement `{ set(state, verifier, ttlMs), get(state), delete(state) }`
+
+Pass to `createSCAuthManager({ pkceStore: new CookiePkceStore({ secret: process.env.COOKIE_SECRET }) })`
+
+See `docs/auth-distributed.md` for deployment guidance.
+
+## Server Helpers / RSC (v1.11.0+)
+
+Import from `soundcloud-api-ts-next/server`:
+- `createSoundCloudServerClient({ clientId, clientSecret, getToken? })` — returns a configured `SoundCloudClient`
+- `getTrack(id, config, cacheOptions?)` / `searchTracks` / `getUser` / `getPlaylist` / `getMe`
+- `scCacheKeys` — `{ track(id), user(id), playlist(id), searchTracks(q), me() }`
+- `cacheOptions`: `{ revalidate?: number | false, tags?: string[] }` — passed to Next.js `unstable_cache` when available
+
+See `docs/rsc-guide.md`.
+
 ## Related Packages
 
 - [soundcloud-api-ts](https://github.com/twin-paws/soundcloud-api-ts) — The underlying API client (dependency)

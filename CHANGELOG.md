@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-02-26
+
+### Added
+- **`PkceStore` interface** — pluggable PKCE verifier store for `SCAuthManager`. Implement `set/get/delete` to use any backend.
+- **`MemoryPkceStore`** — default in-memory implementation (existing behavior, no breaking change). Exported from `soundcloud-api-ts-next`.
+- **`CookiePkceStore`** — signed cookie implementation (HMAC-SHA256, no new deps). Recommended for Vercel/serverless. Accepts `{ secret, cookieName? }`.
+- **Multi-tenant `initLogin`** — optional `sessionId` param scopes PKCE state to prevent parallel login collisions.
+- **Configurable `stateCookieName`** in `SCAuthManagerConfig`.
+- **`createSoundCloudServerClient(config)`** — factory for RSC/server-side use. Wraps base `SoundCloudClient` with optional `getToken` for user-scoped calls. Exported from `soundcloud-api-ts-next/server`.
+- **Server helpers** (`src/server-helpers.ts`) — `getTrack`, `searchTracks`, `getUser`, `getPlaylist`, `getMe`. Each accepts `cacheOptions: { revalidate?, tags? }` for Next.js `unstable_cache` integration.
+- **`scCacheKeys`** — cache key factories for all server helpers. Exported from `soundcloud-api-ts-next/server`.
+- **`docs/auth-distributed.md`** — single-instance vs distributed deployment guide, store recommendations, cookie options.
+- **`docs/rsc-guide.md`** — App Router RSC patterns, caching, `revalidateTag` usage.
+
+### Changed
+- `SCAuthManagerConfig` now accepts optional `pkceStore?: PkceStore` and `stateCookieName?: string`.
+
 ## [1.10.0] - 2026-02-26
 
 ### Added
