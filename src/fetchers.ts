@@ -29,6 +29,7 @@ let _config: FetchersConfig | null = null;
 let _client: SoundCloudClient | null = null;
 let _clientToken: string | undefined;
 let _clientTokenExpiry = 0;
+let _refreshPromise: Promise<string> | null = null;
 
 /**
  * Configure the global SoundCloud fetcher client.
@@ -52,6 +53,7 @@ export function configureFetchers(config: FetchersConfig): void {
   _client = null;
   _clientToken = undefined;
   _clientTokenExpiry = 0;
+  _refreshPromise = null;
 }
 
 function getClient(): SoundCloudClient {
@@ -73,11 +75,14 @@ function getClient(): SoundCloudClient {
 
 async function ensureClientToken(): Promise<string> {
   if (_clientToken && Date.now() < _clientTokenExpiry) return _clientToken;
-  const result = await getClient().auth.getClientToken();
-  _clientToken = result.access_token;
-  // Expire 5 minutes before actual expiry
-  _clientTokenExpiry = Date.now() + (result.expires_in - 300) * 1000;
-  return _clientToken;
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    const result = await getClient().auth.getClientToken();
+    _clientToken = result.access_token;
+    _clientTokenExpiry = Date.now() + (result.expires_in - 300) * 1000;
+    return _clientToken!;
+  })().finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
 }
 
 // ── Fetchers ─────────────────────────────────────────────────────────────────

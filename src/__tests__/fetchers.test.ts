@@ -108,6 +108,24 @@ describe('configureFetchers', () => {
     expect(mockClient.auth.getClientToken).toHaveBeenCalledTimes(1);
   });
 
+  it('concurrent calls only trigger one getClientToken() call', async () => {
+    // Expire the cached token so next call must refresh
+    configureFetchers({ clientId: 'id', clientSecret: 'secret' });
+    vi.clearAllMocks();
+    mockClient.auth.getClientToken.mockResolvedValue({ access_token: 'cc_tok', expires_in: 3600 });
+    mockClient.tracks.getTrack.mockResolvedValue({ id: 1, title: 'Track' });
+    // Fire three concurrent fetches before any token is cached
+    const [r1, r2, r3] = await Promise.all([
+      scFetchers.track(1),
+      scFetchers.track(2),
+      scFetchers.track(3),
+    ]);
+    expect(mockClient.auth.getClientToken).toHaveBeenCalledTimes(1);
+    expect(r1).toBeTruthy();
+    expect(r2).toBeTruthy();
+    expect(r3).toBeTruthy();
+  });
+
   it('resets client on re-configure', async () => {
     await scFetchers.track(1);
     configureFetchers({ clientId: 'new_id', clientSecret: 'new_secret' });

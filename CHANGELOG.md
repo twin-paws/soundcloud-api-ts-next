@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.3] - 2026-02-26
+
+### Fixed
+- **Concurrent token refresh race** — `ensureClientToken` now uses a module-level `_refreshPromise` so that concurrent requests when the token is expired share a single `getClientToken()` call instead of firing duplicate refreshes.
+
+### Changed
+- Bumped `soundcloud-api-ts` dependency to `^1.13.1`.
+
 ## [1.12.0] - 2026-02-26
 
 ### Added
