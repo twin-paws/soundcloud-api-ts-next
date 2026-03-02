@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.4] - 2026-03-02
+
+### Changed
+
+- Bumped `soundcloud-api-ts` dependency to `^1.13.2`.
+
+### Fixed (via soundcloud-api-ts@1.13.2)
+
+- **OAuth body credentials**: SoundCloud now rejects `Authorization: Basic` headers on `/oauth/token` for all grant types. `getClientToken()` and `refreshUserToken()` — used internally by this package for server-side token management — now send credentials in the request body. No API changes; this is a transparent fix. See [soundcloud-api-ts changelog](https://github.com/twin-paws/soundcloud-api-ts/blob/main/CHANGELOG.md) for full details.
+
 ## [1.12.3] - 2026-02-26
 
 ### Fixed

@@ -1,4 +1,4 @@
-# soundcloud-api-ts-next
+# soundcloud-api-ts-next v1.12.4
 
 > React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
