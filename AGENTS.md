@@ -95,7 +95,7 @@ This package requires `soundcloud-api-ts ^1.13.0`. Key additions available to th
 - **`sc.tracks.getTracks(ids[])`** — batch fetch multiple tracks by ID
 - **`sc.me.getConnections()`** — list linked social accounts
 - **`sc.raw`** — escape hatch: `sc.raw.get('/any/endpoint/{id}', params)` returns `RawResponse<unknown>`
-- **Fetch injection** — pass `fetch`/`AbortController` in config for Workers/Bun/Deno portability
+- **Fetch injection** — pass `fetch` in config for Workers/Bun/Deno portability
 - **In-flight deduplication** — `dedupe: true` (default) — concurrent identical GETs share one promise
 - **Cache interface** — pass `cache: SoundCloudCache` to plug in any backend
 - **`onRetry` hook** — `(info: RetryInfo) => void` fires on every retry

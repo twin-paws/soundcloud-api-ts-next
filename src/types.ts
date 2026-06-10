@@ -113,6 +113,49 @@ export interface SoundCloudRoutesConfig {
    */
   onRequest?: (telemetry: import("soundcloud-api-ts").SCRequestTelemetry) => void;
   /**
+   * Custom `fetch` implementation forwarded to the underlying `SoundCloudClient`.
+   * Useful for Workers/Bun/Deno portability or test injection.
+   *
+   * @default globalThis.fetch
+   */
+  fetch?: typeof globalThis.fetch;
+  /**
+   * Deduplicate concurrent identical GET requests on the underlying client
+   * (concurrent callers share one promise and receive the same object reference).
+   *
+   * @default true
+   */
+  dedupe?: boolean;
+  /**
+   * Optional cache backend for GET responses on the underlying client.
+   * Implement the `SoundCloudCache` interface to plug in any backend
+   * (in-memory, Redis, etc.).
+   */
+  cache?: import("soundcloud-api-ts").SoundCloudCache;
+  /**
+   * Default TTL in milliseconds for cached GET responses (used with {@link cache}).
+   *
+   * @default 60000
+   */
+  cacheTtlMs?: number;
+  /**
+   * Called before each retry attempt on the underlying client with structured
+   * retry info (attempt, delay, reason, status, url).
+   */
+  onRetry?: (info: import("soundcloud-api-ts").RetryInfo) => void;
+  /**
+   * Maximum number of retries on 429 (rate limit) and 5xx (server error) responses.
+   *
+   * @default 3
+   */
+  maxRetries?: number;
+  /**
+   * Base delay in milliseconds for exponential backoff between retries.
+   *
+   * @default 1000
+   */
+  retryBaseDelay?: number;
+  /**
    * Selective route exposure. Use `allowlist` to only expose specific route prefixes,
    * or `denylist` to block specific ones. Unlisted routes return 403 when allowlist is set.
    *

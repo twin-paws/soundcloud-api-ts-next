@@ -62,8 +62,13 @@ const mockClient = {
   clearToken: vi.fn(),
 };
 
+const clientCtorConfigs: any[] = [];
+
 vi.mock('soundcloud-api-ts', () => ({
-  SoundCloudClient: function() { return mockClient; },
+  SoundCloudClient: function(config: any) {
+    clientCtorConfigs.push(config);
+    return mockClient;
+  },
   getAuthorizationUrl: vi.fn().mockReturnValue('https://soundcloud.com/connect?test'),
   generateCodeVerifier: vi.fn().mockReturnValue('verifier123'),
   generateCodeChallenge: vi.fn().mockResolvedValue('challenge123'),
@@ -991,6 +996,42 @@ describe('createSoundCloudRoutes', () => {
       body: JSON.stringify({}),
     }));
     expect(res.status).toBe(200);
+  });
+
+  // ── Client config passthrough ──
+
+  it('forwards fetch/dedupe/cache/cacheTtlMs/onRetry/maxRetries/retryBaseDelay to SoundCloudClient', async () => {
+    const customFetch = vi.fn();
+    const cache = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+    const onRetry = vi.fn();
+    const onRequest = vi.fn();
+    const r2 = createSoundCloudRoutes({
+      clientId: 'id',
+      clientSecret: 'secret',
+      fetch: customFetch as any,
+      dedupe: false,
+      cache,
+      cacheTtlMs: 1234,
+      onRetry,
+      maxRetries: 7,
+      retryBaseDelay: 50,
+      onRequest,
+    });
+    clientCtorConfigs.length = 0;
+    await r2.getTrack(1); // client is constructed lazily on first use
+    expect(clientCtorConfigs).toHaveLength(1);
+    expect(clientCtorConfigs[0]).toMatchObject({
+      clientId: 'id',
+      clientSecret: 'secret',
+      fetch: customFetch,
+      dedupe: false,
+      cache,
+      cacheTtlMs: 1234,
+      onRetry,
+      maxRetries: 7,
+      retryBaseDelay: 50,
+      onRequest,
+    });
   });
 
 });

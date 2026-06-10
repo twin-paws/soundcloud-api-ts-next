@@ -358,13 +358,14 @@ interface SoundCloudRoutesConfig {
   getToken?: () => Promise<string>;
   onRouteComplete?: (telemetry: SCRouteTelemetry) => void;
   onRequest?: (telemetry: SCRequestTelemetry) => void;
-  // soundcloud-api-ts v1.13.0+ options (forwarded to SoundCloudClient)
+  // Options forwarded to the underlying SoundCloudClient
   fetch?: typeof globalThis.fetch;          // custom fetch for Workers/Bun/Deno
-  AbortController?: typeof globalThis.AbortController;
   dedupe?: boolean;                          // default true — dedupes concurrent GETs
   cache?: SoundCloudCache;                   // plug in any cache backend
   cacheTtlMs?: number;                       // default 60000ms
   onRetry?: (info: RetryInfo) => void;       // fires on every retry attempt
+  maxRetries?: number;                       // default 3 — retries on 429/5xx
+  retryBaseDelay?: number;                   // default 1000ms — exponential backoff base
 }
 
 // From soundcloud-api-ts v1.13.0 — available via import from 'soundcloud-api-ts'

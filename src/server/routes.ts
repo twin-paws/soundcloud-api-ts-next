@@ -26,6 +26,13 @@ function getClient(): SoundCloudClient {
       clientSecret: ctx.config.clientSecret,
       redirectUri: ctx.config.redirectUri,
       onRequest: ctx.config.onRequest,
+      fetch: ctx.config.fetch,
+      dedupe: ctx.config.dedupe,
+      cache: ctx.config.cache,
+      cacheTtlMs: ctx.config.cacheTtlMs,
+      onRetry: ctx.config.onRetry,
+      maxRetries: ctx.config.maxRetries,
+      retryBaseDelay: ctx.config.retryBaseDelay,
     });
   }
   return ctx.client;
