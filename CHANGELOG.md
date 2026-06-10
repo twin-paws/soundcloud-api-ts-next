@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] - 2026-06-10
+
+### Fixed
+
+- **Next.js 16 added to the `next` peer dependency range** (`^13 || ^14 || ^15 || ^16`). The package already worked on Next 16 in production (thesubdelta.com runs 16.1.6) but installs emitted an unmet-peer warning. CI/dev now tests against Next 16.
+
 ## [1.13.0] - 2026-06-10
 
 ### Added

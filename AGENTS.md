@@ -12,7 +12,7 @@ React hooks and Next.js API route handlers for the SoundCloud API. Client secret
 npm install soundcloud-api-ts-next
 ```
 
-Requires: React 18+/19+, Next.js 13+/14+/15+
+Requires: React 18+/19+, Next.js 13+/14+/15+/16+
 
 ### 1. Create API Routes (App Router)
 
