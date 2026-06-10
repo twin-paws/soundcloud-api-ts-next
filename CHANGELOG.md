@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-06-10
+
+### Added
+
+- **Client config passthrough** — `createSoundCloudRoutes` now accepts `fetch`, `dedupe`, `cache`, `cacheTtlMs`, `onRetry`, `maxRetries`, and `retryBaseDelay` and forwards them to the underlying `SoundCloudClient`. These options were documented in the agent-facing docs but never implemented; with `soundcloud-api-ts@1.14.0` they are all functional upstream. `AbortController` was removed from the docs — it never existed as a config key, here or upstream.
+
+### Changed
+
+- Bumped `soundcloud-api-ts` dependency to `^1.14.0`. Upstream behavior changes absorbed: GET deduplication on by default, functional `cache`/`cacheTtlMs`/`fetch`, retry options honored on `sc.auth.*`, and `getUserToken`/`refreshUserToken` now throw when `redirectUri` is missing. All verified non-breaking for this package — only `SCAuthManager` calls the user-token methods and it always configures `redirectUri`.
+- CI/publish/docs workflows read the pnpm version from the new `"packageManager": "pnpm@10.23.0"` field instead of a hardcoded `version: 9`.
+
+### Fixed
+
+- **Documentation drift** (full sweep in `docs/audit-2026-06.md`): README RSC example (called `createSoundCloudServerClient` as sync and passed cache options to the wrong function), `usePlayer(trackId)` signature, `CookiePkceStore` positional constructor and real method signatures, `createSoundCloudServerClient` async return shape (`{ client, userToken, token() }`), phantom `createSoundCloudRouteHandler` name, stale dependency-version references, and a correction note on the 1.10.0 entry (its hooks/routes were never shipped — use `scFetchers.tracks(ids[])` / `scFetchers.meConnections(token)`).
+
 ## [1.12.4] - 2026-03-02
 
 ### Changed
