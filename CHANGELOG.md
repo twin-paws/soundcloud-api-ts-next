@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - **`scKeys`** — TanStack Query / SWR compatible query key factories: `all`, `track`, `tracks`, `user`, `playlist`, `searchTracks`, `searchUsers`, `me`, `meConnections`. Exported from main entrypoint.
 - **Hook options** — all hooks now accept `enabled?: boolean`, `refreshInterval?: number`, `retry?: number` (exponential backoff).
 - **Client-side hook dedup** — concurrent calls with identical args share a single in-flight promise.
-- **Route config** — `createSoundCloudRouteHandler` now accepts `routes.allowlist`, `routes.denylist`, `cacheHeaders`, `cors`, `csrfProtection`.
+- **Route config** — `createSoundCloudRoutes` now accepts `routes.allowlist`, `routes.denylist`, `cacheHeaders`, `cors`, `csrfProtection`. *(This entry originally named a non-existent `createSoundCloudRouteHandler`; the exported factory has always been `createSoundCloudRoutes`.)*
 - **Consistent error envelope** — all routes return `{ code, message, status, requestId }` on error. `requestId` is a `crypto.randomUUID()` per request.
 - **`examples/app-router/`** — full App Router example: RSC track page, client hook component, OAuth login flow, `CookiePkceStore` auth callback, route handler with config.
 - **`docs/tanstack-query.md`** — drop-in usage with TanStack Query and SWR using `scFetchers` + `scKeys`.
@@ -53,6 +53,8 @@ All notable changes to this project will be documented in this file.
 - `SCAuthManagerConfig` now accepts optional `pkceStore?: PkceStore` and `stateCookieName?: string`.
 
 ## [1.10.0] - 2026-02-26
+
+> **Correction (2026-06-10):** this entry describes features that were never shipped. The hooks `useTracks(ids[])` and `useMeConnections()` and the routes `GET /api/soundcloud/tracks?ids=...` and `GET /api/soundcloud/me/connections` do not exist in any released version. The batch-tracks and connections capabilities are available only through the headless layer added in 1.12.0: `scFetchers.tracks(ids[])` / `scFetchers.meConnections(token)` with `scKeys.tracks` / `scKeys.meConnections`, or directly on the underlying `soundcloud-api-ts` client. The original text is preserved below for history.
 
 ### Added
 

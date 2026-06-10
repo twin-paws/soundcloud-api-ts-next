@@ -88,9 +88,9 @@ Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 4. **Auth hooks need redirectUri** — set `redirectUri` in `createSoundCloudRoutes` config for OAuth flow.
 5. **Route telemetry** — pass `onRouteComplete` in config to get `SCRouteTelemetry` after every API route (route, method, durationMs, status, error?). Works with both App Router and Pages Router handlers.
 
-## Underlying Client (soundcloud-api-ts v1.13.0+)
+## Underlying Client (soundcloud-api-ts v1.14.0+)
 
-This package requires `soundcloud-api-ts ^1.13.0`. Key additions available to this package:
+This package requires `soundcloud-api-ts ^1.14.0`. Key additions available to this package:
 
 - **`sc.tracks.getTracks(ids[])`** — batch fetch multiple tracks by ID
 - **`sc.me.getConnections()`** — list linked social accounts
@@ -109,17 +109,17 @@ All config options are passed through `createSoundCloudRoutes(config)` → forwa
 
 `PkceStore` interface (`src/auth/stores/`) — pluggable PKCE verifier store:
 - `MemoryPkceStore` — default, in-process (breaks on serverless/multi-instance)
-- `CookiePkceStore` — signed HMAC-SHA256 cookie store. Best for Vercel. Accepts `{ secret: string, cookieName?: string }`. Use `setCookieHeader()` + `getFromRequest(req)` helpers.
+- `CookiePkceStore` — signed HMAC-SHA256 cookie store. Best for Vercel. Positional constructor: `new CookiePkceStore(secret, cookieName?)` (cookieName defaults to `"sc_pkce"`). Use `setCookieHeader(state, ttlMs, secure?): Promise<string>` + `getFromRequest(req): Promise<string | undefined>` helpers.
 - Custom: implement `{ set(state, verifier, ttlMs), get(state), delete(state) }`
 
-Pass to `createSCAuthManager({ pkceStore: new CookiePkceStore({ secret: process.env.COOKIE_SECRET }) })`
+Pass to `createSCAuthManager({ pkceStore: new CookiePkceStore(process.env.COOKIE_SECRET!) })`
 
 See `docs/auth-distributed.md` for deployment guidance.
 
 ## Server Helpers / RSC (v1.11.0+)
 
 Import from `soundcloud-api-ts-next/server`:
-- `createSoundCloudServerClient({ clientId, clientSecret, getToken? })` — returns a configured `SoundCloudClient`
+- `createSoundCloudServerClient({ clientId, clientSecret, getToken?, onRequest?, onRetry? })` — `async`, resolves to `SoundCloudServerClient` (`{ client, userToken, token() }`); call API methods on `.client`, pass `{ token: sc.token() }` for authenticated calls
 - `getTrack(id, config, cacheOptions?)` / `searchTracks` / `getUser` / `getPlaylist` / `getMe`
 - `scCacheKeys` — `{ track(id), user(id), playlist(id), searchTracks(q), me() }`
 - `cacheOptions`: `{ revalidate?: number | false, tags?: string[] }` — passed to Next.js `unstable_cache` when available
@@ -146,7 +146,7 @@ No TanStack Query or SWR dependency. See `docs/tanstack-query.md`.
 ## Route Config (v1.12.0+)
 
 ```ts
-createSoundCloudRouteHandler({
+createSoundCloudRoutes({
   clientId, clientSecret,
   routes: { allowlist: ['tracks', 'search', 'resolve'] },
   cacheHeaders: { tracks: 'public, max-age=60', me: 'no-store', default: 'public, max-age=30' },

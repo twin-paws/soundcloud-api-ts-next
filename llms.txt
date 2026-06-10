@@ -41,7 +41,7 @@ npm install soundcloud-api-ts-next
 - useTrackComments(trackId) — track comments
 - useTrackLikes(trackId) — users who liked track
 - useRelatedTracks(trackId) — related tracks
-- usePlayer(streamUrl) — audio player with play/pause/seek
+- usePlayer(trackId) — audio player with play/pause/seek
 
 ### Hooks - Users
 - useUser(userId) — fetch single user
@@ -105,9 +105,9 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 ## TypeScript types (re-exported from soundcloud-api-ts)
 SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SCRouteTelemetry, SCRequestTelemetry
 
-## Underlying client (soundcloud-api-ts v1.13.0+)
+## Underlying client (soundcloud-api-ts v1.14.0+)
 
-This package depends on soundcloud-api-ts ^1.13.0. New capabilities available via the raw client and config:
+This package depends on soundcloud-api-ts ^1.14.0. New capabilities available via the raw client and config:
 
 ```ts
 // Pass advanced options through createSoundCloudRoutes → forwarded to SoundCloudClient
@@ -118,12 +118,14 @@ createSoundCloudRoutes({
   cache: myCache,               // SoundCloudCache interface — plug in any backend
   cacheTtlMs: 30_000,
   onRetry: (info) => logger.warn('SC retry', info),
+  maxRetries: 3,                // default 3 — retries on 429/5xx
+  retryBaseDelay: 1000,         // default 1000ms — exponential backoff base
 })
 ```
 
-New endpoints available via route handlers and hooks (auto-wired):
-- `sc.tracks.getTracks(ids[])` — batch fetch multiple tracks
-- `sc.me.getConnections()` — linked social accounts
+Newer upstream endpoints — available via scFetchers and the underlying client (NOT wired into route handlers or hooks):
+- `scFetchers.tracks(ids[])` / `sc.tracks.getTracks(ids[])` — batch fetch multiple tracks
+- `scFetchers.meConnections(token)` / `sc.me.getConnections()` — linked social accounts
 - `sc.raw.get('/any/endpoint/{id}', params)` — escape hatch for any spec endpoint
 
 Auth: see `docs/auth-guide.md` in soundcloud-api-ts for `TokenProvider`/`TokenStore` patterns.
@@ -131,12 +133,14 @@ Auth: see `docs/auth-guide.md` in soundcloud-api-ts for `TokenProvider`/`TokenSt
 ## Auth Stores (soundcloud-api-ts-next/server + main)
 PkceStore interface: { set(state, verifier, ttlMs): void | Promise<void>; get(state): string | undefined | Promise<...>; delete(state): void | Promise<void> }
 MemoryPkceStore — default in-memory (exported from main entrypoint)
-CookiePkceStore({ secret, cookieName? }) — signed HMAC-SHA256 cookie store (exported from main entrypoint)
-  .setCookieHeader(state, verifier): string
-  .getFromRequest(req: Request): Map<string, string>
+new CookiePkceStore(secret, cookieName?) — signed HMAC-SHA256 cookie store, positional args (exported from main entrypoint)
+  .setCookieHeader(state, ttlMs, secure?): Promise<string>
+  .getFromRequest(req: Request): Promise<string | undefined>
 
 ## Server Helpers (soundcloud-api-ts-next/server)
-createSoundCloudServerClient({ clientId, clientSecret, getToken? }): SoundCloudClient
+createSoundCloudServerClient({ clientId, clientSecret, getToken?, onRequest?, onRetry? }): Promise<SoundCloudServerClient>
+  — async; resolves to { client: SoundCloudClient, userToken: string | undefined, token(): string | undefined }
+  — call API methods on .client, e.g. sc.client.tracks.getTrack(id, { token: sc.token() })
 getTrack(id, config, cacheOptions?)
 searchTracks(query, config, cacheOptions?)
 getUser(id, config, cacheOptions?)
@@ -177,7 +181,7 @@ All routes: { code: string, message: string, status: number, requestId: string }
 Codes: NOT_FOUND | UNAUTHORIZED | UPSTREAM_ERROR | FORBIDDEN | BAD_REQUEST
 
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.14.0+)
 
 ## Links
 - npm: https://www.npmjs.com/package/soundcloud-api-ts-next

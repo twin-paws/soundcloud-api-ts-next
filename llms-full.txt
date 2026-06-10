@@ -368,7 +368,7 @@ interface SoundCloudRoutesConfig {
   retryBaseDelay?: number;                   // default 1000ms — exponential backoff base
 }
 
-// From soundcloud-api-ts v1.13.0 — available via import from 'soundcloud-api-ts'
+// From soundcloud-api-ts v1.14.0 — available via import from 'soundcloud-api-ts'
 interface SoundCloudCache {
   get<T = unknown>(key: string): Promise<T | undefined> | T | undefined;
   set<T = unknown>(key: string, value: T, options: { ttlMs: number }): Promise<void> | void;
@@ -383,7 +383,7 @@ interface RetryInfo {
   url: string;
 }
 
-// New endpoints in v1.13.0 (available via routes and directly via soundcloud-api-ts)
+// Newer upstream endpoints (available via scFetchers and directly via soundcloud-api-ts — NOT wired into route handlers or hooks)
 // sc.tracks.getTracks(ids: (string|number)[]) → SoundCloudTrack[]
 // sc.me.getConnections() → SoundCloudConnection[]
 // sc.raw.get(path, params?) → RawResponse<unknown>  (escape hatch for any endpoint)
@@ -412,7 +412,7 @@ interface SCLoginResult {
 SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SoundCloudPaginatedResponse, SoundCloudMe, SoundCloudWebProfile, SoundCloudActivity, SoundCloudActivitiesResponse
 
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.13.0+)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.14.0+)
 
 ## Links
 - npm: https://www.npmjs.com/package/soundcloud-api-ts-next

@@ -177,7 +177,7 @@ All hooks return `{ data, loading, error }`.
 | `useTrackComments(id)` | Track comments |
 | `useTrackLikes(id)` | Users who liked a track |
 | `useRelatedTracks(id)` | Related tracks |
-| `usePlayer(streamUrl)` | Audio player — `{ playing, progress, duration, play, pause, toggle, seek }` |
+| `usePlayer(trackId)` | Audio player — `{ playing, progress, duration, play, pause, toggle, seek }` |
 
 ### Users
 
@@ -203,19 +203,19 @@ All hooks return `{ data, loading, error }`.
 
 ## Server Components (RSC)
 
-Use `createSoundCloudServerClient` in React Server Components with optional `next/cache` revalidation:
+Use the server helpers (`getTrack`, `searchTracks`, `getUser`, `getPlaylist`, `getMe`) in React Server Components with optional `next/cache` revalidation:
 
 ```ts
 // app/tracks/[id]/page.tsx
-import { createSoundCloudServerClient } from "soundcloud-api-ts-next/server";
+import { getTrack } from "soundcloud-api-ts-next/server";
 
-const sc = createSoundCloudServerClient({
+const config = {
   clientId: process.env.SC_CLIENT_ID!,
   clientSecret: process.env.SC_CLIENT_SECRET!,
-});
+};
 
 export default async function TrackPage({ params }: { params: { id: string } }) {
-  const track = await sc.tracks.getTrack(Number(params.id), {
+  const track = await getTrack(Number(params.id), config, {
     revalidate: 60,
     tags: [`track-${params.id}`],
   });
@@ -223,6 +223,22 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   return <h1>{track.title}</h1>;
 }
 ```
+
+For full API access, `createSoundCloudServerClient` is `async` and returns `{ client, userToken, token() }` — call methods on `.client`:
+
+```ts
+import { createSoundCloudServerClient } from "soundcloud-api-ts-next/server";
+
+const sc = await createSoundCloudServerClient({
+  clientId: process.env.SC_CLIENT_ID!,
+  clientSecret: process.env.SC_CLIENT_SECRET!,
+});
+
+const tokenResult = await sc.client.auth.getClientToken();
+const track = await sc.client.tracks.getTrack(trackId, { token: tokenResult.access_token });
+```
+
+See [`docs/rsc-guide.md`](./docs/rsc-guide.md) for full patterns.
 
 **Cache key helpers** — use `scCacheKeys` (from `/server`) with `revalidateTag` for on-demand invalidation:
 
