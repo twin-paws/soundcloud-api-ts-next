@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       soundcloud-api-ts:
-        specifier: ^1.14.0
-        version: 1.14.0
+        specifier: ^1.15.0
+        version: 1.15.0
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.9.1
@@ -1604,8 +1604,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  soundcloud-api-ts@1.14.0:
-    resolution: {integrity: sha512-xbKpbmCB2YZ4y61EPlz86tCALGhRy1FTKfvzoVsVvHV5EgwWWk61gDvHxmiHiQu961T7U+ZQy7CgIVa2Lpl7cg==}
+  soundcloud-api-ts@1.15.0:
+    resolution: {integrity: sha512-Vn/sSeb/Hctn/gudX7AktQdY28qXwFD2o6h6bWxo69maLCQuAszdFvTTn6M3aSSCh3reh5A+7fMN/c3MmYhwbA==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -3360,7 +3360,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  soundcloud-api-ts@1.14.0: {}
+  soundcloud-api-ts@1.15.0: {}
 
   source-map-js@1.2.1: {}
 

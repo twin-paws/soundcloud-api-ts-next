@@ -77,7 +77,7 @@ const sc = createSoundCloudRoutes({
 All error responses use a consistent envelope:
 
 ```json
-{ "code": "NOT_FOUND", "message": "Not found", "status": 404, "requestId": "..." }
+{ "code": "NOT_FOUND", "message": "Not found", "status": 404, "requestId": "...", "errorCode": "not_found" }
 ```
 
 See [`examples/app-router/route.ts`](./examples/app-router/route.ts) for the full example.
@@ -190,6 +190,8 @@ All hooks return `{ data, loading, error }`.
 | `useUserLikes(id)` | User's liked tracks |
 | `useUserFollowers(id)` | User's followers |
 | `useUserFollowings(id)` | User's followings |
+| `useRelatedUsers(id)` | Related artists |
+| `useUserReposts(id)` | User's track reposts |
 
 ### Playlists
 
@@ -394,6 +396,8 @@ Available after login. Automatically pass the user's access token.
 | `useMePlaylists()` | Your playlists |
 | `useMeFollowings()` | Who you follow |
 | `useMeFollowers()` | Your followers |
+| `useMeFeed()` | Current activity feed |
+| `useMeRecentlyPlayed()` | Last 25 recently played tracks |
 
 ### Actions
 
@@ -631,8 +635,8 @@ import { getTrack } from "soundcloud-api-ts-next/server";
 const track = await getTrack(trackId, config, { revalidate: 60 });
 
 // 2. Render an embeddable player (soundcloud-widget-react)
-import { SoundCloudWidget } from "soundcloud-widget-react";
-<SoundCloudWidget url={track.permalinkUrl} onPlay={() => trackPlay(track.id)} />
+import { SCWidget } from "soundcloud-widget-react";
+<SCWidget trackId={track.id} onPlay={() => trackPlay(track.id)} />
 
 // 3. React hooks for dynamic data (soundcloud-api-ts-next)
 import { useTrack } from "soundcloud-api-ts-next";

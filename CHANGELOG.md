@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-08-17
+
+Matches `soundcloud-api-ts@^1.15.0` (official OpenAPI surface, CC refresh reuse, search `limit`/`access`).
+
+### Added
+
+- **`useMeFeed`**, **`useMeRecentlyPlayed`**, **`useRelatedUsers`**, **`useUserReposts`** — hooks for the 1.15 feed / related-artists / recently-played / user-reposts routes.
+- **Routes:** `GET /me/feed`, `/me/feed/tracks`, `/me/recently-played`, `/me/reposts/tracks`, `/me/reposts/playlists`; `GET /users/:id/related`, `/users/:id/reposts/tracks`, `/users/:id/reposts/playlists`; `GET /tracks/:id/preview`.
+- **`scFetchers.relatedTracks` / `relatedUsers` / `meFeed` / `meRecentlyPlayed`** and matching `scKeys`.
+- **`SoundCloudError` re-exported** from the main entry (includes `errorCode`, `isInvalidGrant`, `isPermanentAuthError` from 1.14.1+).
+
+### Changed
+
+- Bumped `soundcloud-api-ts` to `^1.15.0`.
+- **Client-credentials tokens persist `refresh_token`** in routes, `scFetchers`, and server helpers. Renew with `refreshToken()` instead of minting a new CC token every expiry (official limit: 50 / 12h / app).
+- **`scFetchers.tracks(ids)`** uses the batch `getTracks` API (max 200) instead of N parallel `getTrack` calls.
+- **Search `limit` is `options.limit`**, not the page-number argument. `useTrackSearch({ limit })` now actually changes page size. Track search still defaults to `access=playable` upstream.
+
+### Fixed
+
+- **Route errors read `SoundCloudError.status`** (the field the upstream error actually has). Previously only `statusCode` was checked, so live 404s became 500s. Envelope now includes `errorCode` when present.
+- **`/next` pagination** forwards `onRequest` and the injected `fetch`.
+
+### Documentation
+
+- README / AGENTS / llms / llms-full: 1.15 surface, correct `handler()` usage (single function, assign to GET/POST/DELETE), CC refresh, search `limit`.
+
+---
+
 ## [1.13.1] - 2026-06-10
 
 ### Fixed

@@ -1,5 +1,6 @@
 import { SoundCloudClient } from "soundcloud-api-ts";
 import type { SCRequestTelemetry, RetryInfo } from "soundcloud-api-ts";
+import { createCcTokenCache } from "./cc-token.js";
 import type {
   SoundCloudTrack,
   SoundCloudUser,
@@ -71,20 +72,33 @@ export interface CacheOptions {
 
 // ── Internals ──────────────────────────────────────────────────────────────
 
+const helperClients = new Map<string, SoundCloudClient>();
+const helperTokens = new Map<string, ReturnType<typeof createCcTokenCache>>();
+
+function credKey(config: ServerHelperConfig): string {
+  return `${config.clientId}:${config.clientSecret}`;
+}
+
 function makeClient(config: ServerHelperConfig): SoundCloudClient {
-  return new SoundCloudClient({
-    clientId: config.clientId,
-    clientSecret: config.clientSecret,
-    onRequest: config.onRequest,
-    onRetry: config.onRetry,
-  });
+  const key = credKey(config);
+  let client = helperClients.get(key);
+  if (!client) {
+    client = new SoundCloudClient({
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      onRequest: config.onRequest,
+      onRetry: config.onRetry,
+    });
+    helperClients.set(key, client);
+    helperTokens.set(key, createCcTokenCache(() => helperClients.get(key)!));
+  }
+  return client;
 }
 
 async function getClientToken(config: ServerHelperConfig): Promise<string> {
   if (config.token) return config.token;
-  const sc = makeClient(config);
-  const result = await sc.auth.getClientToken();
-  return result.access_token;
+  makeClient(config);
+  return helperTokens.get(credKey(config))!.ensure();
 }
 
 /**

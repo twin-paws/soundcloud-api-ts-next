@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockClient = {
   auth: {
-    getClientToken: vi.fn().mockResolvedValue({ access_token: 'cc_tok', expires_in: 3600 }),
+    getClientToken: vi.fn().mockResolvedValue({ access_token: 'cc_tok', refresh_token: 'cc_ref', expires_in: 3600 }),
+    refreshToken: vi.fn().mockResolvedValue({ access_token: 'cc_tok2', refresh_token: 'cc_ref2', expires_in: 3600 }),
   },
   tracks: {
     getTrack: vi.fn().mockResolvedValue({ id: 1, title: 'Track' }),
+    getTracks: vi.fn().mockImplementation(async (ids: number[]) => ids.map((id) => ({ id, title: 'Track' }))),
+    getRelated: vi.fn().mockResolvedValue([{ id: 9, title: 'Rel' }]),
   },
   users: {
     getUser: vi.fn().mockResolvedValue({ id: 2, username: 'user' }),
+    getRelated: vi.fn().mockResolvedValue({ collection: [{ id: 8 }], next_href: null }),
   },
   playlists: {
     getPlaylist: vi.fn().mockResolvedValue({ id: 3, title: 'Playlist' }),
@@ -28,6 +32,10 @@ const mockClient = {
 
 vi.mock('soundcloud-api-ts', () => ({
   SoundCloudClient: function () { return mockClient; },
+  SoundCloudError: class SoundCloudError extends Error {
+    status = 400;
+    isInvalidGrant = false;
+  },
 }));
 
 import { configureFetchers, scFetchers } from '../fetchers.js';
@@ -55,10 +63,10 @@ describe('configureFetchers', () => {
     expect(mockClient.tracks.getTrack).toHaveBeenCalledWith(1, { token: 'user_tok' });
   });
 
-  it('fetches multiple tracks in parallel', async () => {
+  it('fetches multiple tracks in one batch request', async () => {
     const results = await scFetchers.tracks([1, 2, 3]);
     expect(results).toHaveLength(3);
-    expect(mockClient.tracks.getTrack).toHaveBeenCalledTimes(3);
+    expect(mockClient.tracks.getTracks).toHaveBeenCalledWith([1, 2, 3], { token: 'cc_tok' });
   });
 
   it('fetches a user', async () => {
@@ -73,13 +81,13 @@ describe('configureFetchers', () => {
 
   it('searches tracks', async () => {
     const result = await scFetchers.searchTracks('lofi', 10);
-    expect(mockClient.search.tracks).toHaveBeenCalledWith('lofi', 10, { token: 'cc_tok' });
+    expect(mockClient.search.tracks).toHaveBeenCalledWith('lofi', undefined, { token: 'cc_tok', limit: 10 });
     expect(result.collection).toHaveLength(1);
   });
 
   it('searches users', async () => {
     await scFetchers.searchUsers('dj', 5);
-    expect(mockClient.search.users).toHaveBeenCalledWith('dj', 5, { token: 'cc_tok' });
+    expect(mockClient.search.users).toHaveBeenCalledWith('dj', undefined, { token: 'cc_tok', limit: 5 });
   });
 
   it('fetches me with explicit token', async () => {

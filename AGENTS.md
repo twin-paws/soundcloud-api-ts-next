@@ -26,7 +26,10 @@ const routes = createSoundCloudRoutes({
   redirectUri: process.env.SOUNDCLOUD_REDIRECT_URI,
 });
 
-export const { GET, POST, DELETE } = routes.handler();
+const handle = routes.handler();
+export const GET = handle;
+export const POST = handle;
+export const DELETE = handle;
 ```
 
 ### 2. Wrap App with Provider
@@ -87,12 +90,18 @@ Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 3. **API prefix must match** — the `apiPrefix` in the provider must match your route file path.
 4. **Auth hooks need redirectUri** — set `redirectUri` in `createSoundCloudRoutes` config for OAuth flow.
 5. **Route telemetry** — pass `onRouteComplete` in config to get `SCRouteTelemetry` after every API route (route, method, durationMs, status, error?). Works with both App Router and Pages Router handlers.
+6. **`handler()` returns one function** — `const handle = routes.handler(); export const GET = handle;` Do not destructure `{ GET, POST }` off `handler()`.
+7. **Search `limit`** — `useTrackSearch(q, { limit: 20 })` is page size. Do not pass limit as the second argument to `sc.search.tracks` (that is `pageNumber`).
+8. **Upstream errors** — `SoundCloudError.status` / `errorCode` / `isInvalidGrant`. Route envelopes now include `errorCode`.
 
-## Underlying Client (soundcloud-api-ts v1.14.0+)
+## Underlying Client (soundcloud-api-ts v1.15.0+)
 
-This package requires `soundcloud-api-ts ^1.14.0`. Key additions available to this package:
+This package requires `soundcloud-api-ts ^1.15.0`. Client-credentials tokens include a `refresh_token` — this package reuses it (do not mint a new CC token every request). Search `limit` is 1–200 (default 10); track search defaults to `access=playable`.
+
+Key additions available to this package:
 
 - **`sc.tracks.getTracks(ids[])`** — batch fetch multiple tracks by ID
+- **`sc.me.getFeed` / `getRecentlyPlayedTracks`**, **`sc.users.getRelated`**, stream/preview/upload on the raw client
 - **`sc.me.getConnections()`** — list linked social accounts
 - **`sc.raw`** — escape hatch: `sc.raw.get('/any/endpoint/{id}', params)` returns `RawResponse<unknown>`
 - **Fetch injection** — pass `fetch` in config for Workers/Bun/Deno portability

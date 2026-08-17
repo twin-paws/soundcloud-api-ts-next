@@ -24,6 +24,7 @@ export type {
 } from "soundcloud-api-ts";
 
 export type { SCRequestTelemetry } from "soundcloud-api-ts";
+export { SoundCloudError } from "soundcloud-api-ts";
 
 /**
  * Structured telemetry emitted after every Next.js API route is handled.

@@ -11,7 +11,7 @@ import type { HookResult } from "../../types.js";
  */
 export function useAuthFetch<T>(
   path: string,
-  options?: SCFetchOptions,
+  options?: SCFetchOptions & { transform?: (json: unknown) => T },
 ): HookResult<T> {
   const { apiPrefix, accessToken, isAuthenticated } = useSoundCloudContext();
   const url =

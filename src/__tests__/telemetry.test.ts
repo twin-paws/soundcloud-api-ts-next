@@ -5,9 +5,10 @@ type ViMockFn = Mock<any>;
 
 const mockClient = {
   auth: {
-    getClientToken: vi.fn().mockResolvedValue({ access_token: 'tok', expires_in: 3600 }),
+    getClientToken: vi.fn().mockResolvedValue({ access_token: 'tok', refresh_token: 'cc_ref', expires_in: 3600 }),
     getUserToken: vi.fn().mockResolvedValue({ access_token: 'user_tok', refresh_token: 'ref', expires_in: 3600 }),
     refreshUserToken: vi.fn().mockResolvedValue({ access_token: 'new_tok' }),
+    refreshToken: vi.fn().mockResolvedValue({ access_token: 'tok2', refresh_token: 'cc_ref2', expires_in: 3600 }),
   },
   tracks: {
     getTrack: vi.fn().mockResolvedValue({ id: 1, title: 'Track' }),
@@ -72,6 +73,10 @@ vi.mock('soundcloud-api-ts', () => ({
   generateCodeChallenge: vi.fn().mockResolvedValue('challenge123'),
   signOut: vi.fn().mockResolvedValue(undefined),
   scFetchUrl: vi.fn().mockResolvedValue({ collection: [] }),
+  SoundCloudError: class SoundCloudError extends Error {
+    status = 400;
+    isInvalidGrant = false;
+  },
 }));
 
 import { createSoundCloudRoutes } from '../server/routes.js';

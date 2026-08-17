@@ -7,7 +7,9 @@ import type {
   SoundCloudPaginatedResponse,
   SoundCloudMe,
   SoundCloudConnection,
+  SoundCloudActivitiesResponse,
 } from "soundcloud-api-ts";
+import { createCcTokenCache } from "./cc-token.js";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -27,9 +29,7 @@ export interface FetchersConfig {
 
 let _config: FetchersConfig | null = null;
 let _client: SoundCloudClient | null = null;
-let _clientToken: string | undefined;
-let _clientTokenExpiry = 0;
-let _refreshPromise: Promise<string> | null = null;
+const _cc = createCcTokenCache(() => getClient());
 
 /**
  * Configure the global SoundCloud fetcher client.
@@ -51,9 +51,7 @@ let _refreshPromise: Promise<string> | null = null;
 export function configureFetchers(config: FetchersConfig): void {
   _config = config;
   _client = null;
-  _clientToken = undefined;
-  _clientTokenExpiry = 0;
-  _refreshPromise = null;
+  _cc.reset();
 }
 
 function getClient(): SoundCloudClient {
@@ -74,15 +72,7 @@ function getClient(): SoundCloudClient {
 }
 
 async function ensureClientToken(): Promise<string> {
-  if (_clientToken && Date.now() < _clientTokenExpiry) return _clientToken;
-  if (_refreshPromise) return _refreshPromise;
-  _refreshPromise = (async () => {
-    const result = await getClient().auth.getClientToken();
-    _clientToken = result.access_token;
-    _clientTokenExpiry = Date.now() + (result.expires_in - 300) * 1000;
-    return _clientToken!;
-  })().finally(() => { _refreshPromise = null; });
-  return _refreshPromise;
+  return _cc.ensure();
 }
 
 // ── Fetchers ─────────────────────────────────────────────────────────────────
@@ -123,7 +113,7 @@ export const scFetchers = {
   },
 
   /**
-   * Fetch multiple tracks by ID in parallel.
+   * Fetch multiple tracks by ID in one batch request (max 200).
    * @param ids - Array of track IDs.
    * @param token - Optional user OAuth token.
    */
@@ -132,7 +122,7 @@ export const scFetchers = {
     token?: string,
   ): Promise<SoundCloudTrack[]> {
     const t = token ?? (await ensureClientToken());
-    return Promise.all(ids.map((id) => getClient().tracks.getTrack(id, { token: t })));
+    return getClient().tracks.getTracks(ids, { token: t });
   },
 
   /**
@@ -170,7 +160,7 @@ export const scFetchers = {
     token?: string,
   ): Promise<SoundCloudPaginatedResponse<SoundCloudTrack>> {
     const t = token ?? (await ensureClientToken());
-    return getClient().search.tracks(q, limit, { token: t });
+    return getClient().search.tracks(q, undefined, { token: t, limit });
   },
 
   /**
@@ -185,11 +175,7 @@ export const scFetchers = {
     token?: string,
   ): Promise<SoundCloudPaginatedResponse<SoundCloudUser>> {
     const t = token ?? (await ensureClientToken());
-    return getClient().search.users(
-      q,
-      limit,
-      { token: t },
-    ) as Promise<SoundCloudPaginatedResponse<SoundCloudUser>>;
+    return getClient().search.users(q, undefined, { token: t, limit });
   },
 
   /**
@@ -216,5 +202,29 @@ export const scFetchers = {
   async resolve(url: string, token?: string): Promise<unknown> {
     const t = token ?? (await ensureClientToken());
     return getClient().resolve.resolveUrl(url, { token: t });
+  },
+
+  async relatedTracks(
+    trackId: string | number,
+    token?: string,
+  ): Promise<SoundCloudTrack[]> {
+    const t = token ?? (await ensureClientToken());
+    return getClient().tracks.getRelated(trackId, undefined, { token: t });
+  },
+
+  async relatedUsers(
+    userId: string | number,
+    token?: string,
+  ): Promise<SoundCloudPaginatedResponse<SoundCloudUser>> {
+    const t = token ?? (await ensureClientToken());
+    return getClient().users.getRelated(userId, undefined, { token: t });
+  },
+
+  async meFeed(token: string, limit?: number): Promise<SoundCloudActivitiesResponse> {
+    return getClient().me.getFeed(limit, { token });
+  },
+
+  async meRecentlyPlayed(token: string): Promise<SoundCloudTrack[]> {
+    return getClient().me.getRecentlyPlayedTracks({ token });
   },
 };

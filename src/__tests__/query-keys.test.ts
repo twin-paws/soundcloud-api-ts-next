@@ -48,6 +48,11 @@ describe('scKeys', () => {
     expect(scKeys.meConnections()).toEqual(['sc', 'me', 'connections']);
   });
 
+  it('relatedTracks and meFeed keys', () => {
+    expect(scKeys.relatedTracks(1)).toEqual(['sc', 'track', '1', 'related']);
+    expect(scKeys.meFeed()).toEqual(['sc', 'me', 'feed']);
+  });
+
   it('keys are readonly tuples (as const)', () => {
     const key = scKeys.track(1);
     // TypeScript ensures these are tuples, length check confirms it

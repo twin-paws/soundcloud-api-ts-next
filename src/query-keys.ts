@@ -46,4 +46,9 @@ export const scKeys = {
 
   /** Key for the authenticated user's linked service connections. */
   meConnections: () => ["sc", "me", "connections"] as const,
+
+  relatedTracks: (id: string | number) => ["sc", "track", String(id), "related"] as const,
+  relatedUsers: (id: string | number) => ["sc", "user", String(id), "related"] as const,
+  meFeed: () => ["sc", "me", "feed"] as const,
+  meRecentlyPlayed: () => ["sc", "me", "recently-played"] as const,
 };

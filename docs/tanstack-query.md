@@ -43,6 +43,15 @@ function SearchResults({ q }: { q: string }) {
   return <ul>{data?.collection.map(t => <li key={t.id}>{t.title}</li>)}</ul>;
 }
 
+// Related artists (1.14+)
+function RelatedArtists({ userId }: { userId: number }) {
+  const { data } = useQuery({
+    queryKey: scKeys.relatedUsers(userId),
+    queryFn: () => scFetchers.relatedUsers(userId),
+  });
+  return <ul>{data?.collection.map(u => <li key={u.id}>{u.username}</li>)}</ul>;
+}
+
 // Authenticated — current user profile
 function MyProfile({ token }: { token: string }) {
   const { data: me } = useQuery({

@@ -1,4 +1,4 @@
-# soundcloud-api-ts-next v1.13.0
+# soundcloud-api-ts-next v1.14.0
 
 > React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
@@ -51,6 +51,8 @@ npm install soundcloud-api-ts-next
 - useUserLikes(userId) — user's liked tracks
 - useUserFollowers(userId) — user's followers
 - useUserFollowings(userId) — user's followings
+- useRelatedUsers(userId) — related artists
+- useUserReposts(userId) — user's track reposts
 
 ### Hooks - Playlists
 - usePlaylist(playlistId) — fetch single playlist
@@ -72,6 +74,8 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 - useMePlaylists() — your playlists
 - useMeFollowings() — who you follow
 - useMeFollowers() — your followers
+- useMeFeed() — current activity feed
+- useMeRecentlyPlayed() — last 25 recently played tracks
 
 ### Hooks - Actions (authenticated)
 - useLike() — { likeTrack(id), unlikeTrack(id) }
@@ -103,11 +107,13 @@ All return { data: T[], loading, error, hasMore, loadMore, reset }
 { data: T | null, loading: boolean, error: Error | null }
 
 ## TypeScript types (re-exported from soundcloud-api-ts)
-SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SCRouteTelemetry, SCRequestTelemetry
+SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SoundCloudMe, SoundCloudConnection, SoundCloudActivitiesResponse, SoundCloudError, SCRouteTelemetry, SCRequestTelemetry
 
-## Underlying client (soundcloud-api-ts v1.14.0+)
+## Underlying client (soundcloud-api-ts v1.15.0+)
 
-This package depends on soundcloud-api-ts ^1.14.0. New capabilities available via the raw client and config:
+This package depends on soundcloud-api-ts ^1.15.0. Client-credentials tokens include refresh_token — routes/fetchers/server helpers reuse it. Search limit is options.limit (1–200, default 10), not the page-number argument. Track search defaults to access=playable.
+
+New capabilities available via the raw client and config:
 
 ```ts
 // Pass advanced options through createSoundCloudRoutes → forwarded to SoundCloudClient
@@ -123,17 +129,20 @@ createSoundCloudRoutes({
 })
 ```
 
-Newer upstream endpoints — available via scFetchers and the underlying client (NOT wired into route handlers or hooks):
-- `scFetchers.tracks(ids[])` / `sc.tracks.getTracks(ids[])` — batch fetch multiple tracks
-- `scFetchers.meConnections(token)` / `sc.me.getConnections()` — linked social accounts
-- `sc.raw.get('/any/endpoint/{id}', params)` — escape hatch for any spec endpoint
+Wired in 1.14.0 (hooks + routes + scFetchers):
+- feed / recently-played / related artists / user+me reposts / track preview
+- `scFetchers.tracks(ids[])` uses batch `getTracks` (max 200)
+- `scFetchers.meConnections(token)` — linked social accounts
+- `sc.raw.get('/any/endpoint/{id}', params)` — escape hatch on the underlying client (upload, storefront)
+
+`SoundCloudError` is re-exported (`status`, `errorCode`, `isInvalidGrant`, `isPermanentAuthError`).
 
 Auth: see `docs/auth-guide.md` in soundcloud-api-ts for `TokenProvider`/`TokenStore` patterns.
 
 ## Auth Stores (soundcloud-api-ts-next/server + main)
 PkceStore interface: { set(state, verifier, ttlMs): void | Promise<void>; get(state): string | undefined | Promise<...>; delete(state): void | Promise<void> }
-MemoryPkceStore — default in-memory (exported from main entrypoint)
-new CookiePkceStore(secret, cookieName?) — signed HMAC-SHA256 cookie store, positional args (exported from main entrypoint)
+MemoryPkceStore — default in-memory (exported from soundcloud-api-ts-next/server)
+new CookiePkceStore(secret, cookieName?) — signed HMAC-SHA256 cookie store, positional args (exported from soundcloud-api-ts-next/server)
   .setCookieHeader(state, ttlMs, secure?): Promise<string>
   .getFromRequest(req: Request): Promise<string | undefined>
 
@@ -158,10 +167,12 @@ configureFetchers({ clientId, clientSecret }): void  // call once at app startup
 scFetchers.track(id, token?) / .tracks(ids[], token?) / .user(id, token?) / .playlist(id, token?)
 scFetchers.searchTracks(q, limit?, token?) / .searchUsers(q, limit?, token?)
 scFetchers.me(token) / .meConnections(token) / .resolve(url, token?)
+scFetchers.relatedTracks(id, token?) / .relatedUsers(id, token?) / .meFeed(token, limit?) / .meRecentlyPlayed(token)
 
 ## Query Keys
 scKeys.all() / .track(id) / .tracks(ids[]) / .user(id) / .playlist(id)
 scKeys.searchTracks(q, limit?) / .searchUsers(q, limit?) / .me() / .meConnections()
+scKeys.relatedTracks(id) / .relatedUsers(id) / .meFeed() / .meRecentlyPlayed()
 
 ## Hook Options (all hooks)
 enabled?: boolean — skip fetch when false
@@ -177,11 +188,13 @@ cors?: { origin?: string | string[]; methods?: string[] }
 csrfProtection?: boolean  — verify Origin on mutations (default false)
 
 ## Error Envelope
-All routes: { code: string, message: string, status: number, requestId: string }
+All routes: { code: string, message: string, status: number, requestId: string, errorCode?: string }
 Codes: NOT_FOUND | UNAUTHORIZED | UPSTREAM_ERROR | FORBIDDEN | BAD_REQUEST
+status comes from SoundCloudError.status (not statusCode).
 
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.14.0+)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.15.0+)
+- soundcloud-widget-react — React embed. Pass `trackId={track.id}`.
 
 ## Links
 - npm: https://www.npmjs.com/package/soundcloud-api-ts-next

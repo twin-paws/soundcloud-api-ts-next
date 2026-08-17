@@ -2,17 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockClient = {
   auth: {
-    getClientToken: vi.fn().mockResolvedValue({ access_token: 'tok', expires_in: 3600 }),
+    getClientToken: vi.fn().mockResolvedValue({ access_token: 'tok', refresh_token: 'cc_ref', expires_in: 3600 }),
     getUserToken: vi.fn().mockResolvedValue({ access_token: 'user_tok', refresh_token: 'ref', expires_in: 3600 }),
     refreshUserToken: vi.fn().mockResolvedValue({ access_token: 'new_tok' }),
+    refreshToken: vi.fn().mockResolvedValue({ access_token: 'tok2', refresh_token: 'cc_ref2', expires_in: 3600 }),
   },
   tracks: {
     getTrack: vi.fn().mockResolvedValue({ id: 1, title: 'Track' }),
+    getTracks: vi.fn().mockResolvedValue([{ id: 1, title: 'Track' }]),
     getStreams: vi.fn().mockResolvedValue({ http_mp3_128_url: 'url' }),
+    getPreviewUrl: vi.fn().mockResolvedValue('https://cf.example/preview'),
     getComments: vi.fn().mockResolvedValue({ collection: [] }),
     getLikes: vi.fn().mockResolvedValue({ collection: [] }),
     getReposts: vi.fn().mockResolvedValue({ collection: [] }),
-    getRelated: vi.fn().mockResolvedValue({ collection: [] }),
+    getRelated: vi.fn().mockResolvedValue([{ id: 9 }]),
   },
   users: {
     getUser: vi.fn().mockResolvedValue({ id: 2, username: 'user' }),
@@ -22,6 +25,9 @@ const mockClient = {
     getPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
     getLikesTracks: vi.fn().mockResolvedValue({ collection: [] }),
     getLikesPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
+    getRelated: vi.fn().mockResolvedValue({ collection: [] }),
+    getRepostsTracks: vi.fn().mockResolvedValue({ collection: [] }),
+    getRepostsPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
   },
   playlists: {
     getPlaylist: vi.fn().mockResolvedValue({ id: 3, title: 'Playlist' }),
@@ -45,6 +51,11 @@ const mockClient = {
     getFollowers: vi.fn().mockResolvedValue({ collection: [] }),
     follow: vi.fn().mockResolvedValue(undefined),
     unfollow: vi.fn().mockResolvedValue(undefined),
+    getFeed: vi.fn().mockResolvedValue({ collection: [] }),
+    getFeedTracks: vi.fn().mockResolvedValue({ collection: [] }),
+    getRecentlyPlayedTracks: vi.fn().mockResolvedValue([{ id: 1 }]),
+    getRepostsTracks: vi.fn().mockResolvedValue({ collection: [] }),
+    getRepostsPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
   },
   likes: {
     likeTrack: vi.fn().mockResolvedValue(true),
@@ -74,6 +85,10 @@ vi.mock('soundcloud-api-ts', () => ({
   generateCodeChallenge: vi.fn().mockResolvedValue('challenge123'),
   signOut: vi.fn().mockResolvedValue(undefined),
   scFetchUrl: vi.fn().mockResolvedValue({ collection: [] }),
+  SoundCloudError: class SoundCloudError extends Error {
+    status = 400;
+    isInvalidGrant = false;
+  },
 }));
 
 import * as scApi from 'soundcloud-api-ts';
@@ -207,6 +222,24 @@ describe('createSoundCloudRoutes', () => {
     const res = await handle(makeReq('/search/tracks?q=test&page=2'));
     expect(res.status).toBe(200);
     expect(mockClient.search.tracks).toHaveBeenCalledWith('test', 2, { token: 'tok' });
+  });
+
+  it('GET /search/tracks honors limit (not as pageNumber)', async () => {
+    const res = await handle(makeReq('/search/tracks?q=test&limit=20'));
+    expect(res.status).toBe(200);
+    expect(mockClient.search.tracks).toHaveBeenCalledWith('test', undefined, { token: 'tok', limit: 20 });
+  });
+
+  it('GET /me/feed', async () => {
+    const res = await handle(makeAuthReq('/me/feed'));
+    expect(res.status).toBe(200);
+    expect(mockClient.me.getFeed).toHaveBeenCalled();
+  });
+
+  it('GET /users/:id/related', async () => {
+    const res = await handle(makeReq('/users/7/related'));
+    expect(res.status).toBe(200);
+    expect(mockClient.users.getRelated).toHaveBeenCalled();
   });
 
   it('GET /search/tracks without q returns 400', async () => {

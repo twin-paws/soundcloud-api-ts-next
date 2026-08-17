@@ -27,6 +27,8 @@ export { useUserFollowings } from "./hooks/useUserFollowings.js";
 export { useTrackComments } from "./hooks/useTrackComments.js";
 export { useTrackLikes } from "./hooks/useTrackLikes.js";
 export { useRelatedTracks } from "./hooks/useRelatedTracks.js";
+export { useRelatedUsers } from "./hooks/useRelatedUsers.js";
+export { useUserReposts } from "./hooks/useUserReposts.js";
 export { usePlaylist } from "./hooks/usePlaylist.js";
 export { usePlaylistTracks } from "./hooks/usePlaylistTracks.js";
 export { usePlaylistSearch } from "./hooks/usePlaylistSearch.js";
@@ -53,6 +55,8 @@ export { useMeLikes } from "./hooks/useMeLikes.js";
 export { useMePlaylists } from "./hooks/useMePlaylists.js";
 export { useMeFollowings } from "./hooks/useMeFollowings.js";
 export { useMeFollowers } from "./hooks/useMeFollowers.js";
+export { useMeFeed } from "./hooks/useMeFeed.js";
+export { useMeRecentlyPlayed } from "./hooks/useMeRecentlyPlayed.js";
 
 // Action hooks
 export { useFollow } from "./hooks/useFollow.js";

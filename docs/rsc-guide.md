@@ -36,7 +36,9 @@ export default async function ArtistPage({ params }: { params: { id: string } })
     clientSecret: process.env.SC_CLIENT_SECRET!,
   });
 
-  // Get a client credentials token for public endpoints
+  // Prefer the server helpers (`getTrack`, `getUser`) — they reuse the
+  // client-credentials refresh_token. If you mint here, persist
+  // tokenResult.refresh_token and renew with sc.client.auth.refreshToken().
   const tokenResult = await sc.client.auth.getClientToken();
   const token = tokenResult.access_token;
 
