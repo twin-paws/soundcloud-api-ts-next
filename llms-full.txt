@@ -1,4 +1,4 @@
-# soundcloud-api-ts-next v1.14.0
+# soundcloud-api-ts-next v1.16.0
 
 > React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
@@ -72,6 +72,13 @@ function useRelatedUsers(userId: string | number | undefined): HookResult<SoundC
 function useUserReposts(userId: string | number | undefined): HookResult<SoundCloudTrack[]>
 function useMeFeed(): HookResult<SoundCloudActivitiesResponse>
 function useMeRecentlyPlayed(): HookResult<SoundCloudTrack[]>
+```
+
+```ts
+// System playlists (stations) — 1.16.0. id is a full URN or its identifier portion; use track.station_urn / user.station_urn.
+function useSystemPlaylist(id: string | null | undefined): HookResult<SoundCloudSystemPlaylist>
+function useUserLikesSystemPlaylists(userId: string | number | undefined): HookResult<SoundCloudSystemPlaylist[]>
+function useMeLikesSystemPlaylists(): HookResult<SoundCloudSystemPlaylist[]>
 ```
 
 ```ts
@@ -375,7 +382,7 @@ interface SoundCloudRoutesConfig {
   retryBaseDelay?: number;                   // default 1000ms — exponential backoff base
 }
 
-// From soundcloud-api-ts v1.15.0 — available via import from 'soundcloud-api-ts'
+// From soundcloud-api-ts v1.16.0 — available via import from 'soundcloud-api-ts'
 interface SoundCloudCache {
   get<T = unknown>(key: string): Promise<T | undefined> | T | undefined;
   set<T = unknown>(key: string, value: T, options: { ttlMs: number }): Promise<void> | void;
@@ -391,6 +398,7 @@ interface RetryInfo {
 }
 
 // 1.15 surface wired here: feed, recently-played, related users, user/me reposts, track preview.
+// 1.16 surface wired here: system playlists (GET /system-playlists/:id, /users/:id/likes/system-playlists, /me/likes/system-playlists).
 // scFetchers.tracks(ids) uses batch getTracks. Search limit is options.limit, not pageNumber.
 // CC tokens persist refresh_token and renew with refreshToken().
 // sc.raw remains an escape hatch on the underlying client.
@@ -419,7 +427,7 @@ interface SCLoginResult {
 SoundCloudTrack, SoundCloudUser, SoundCloudPlaylist, SoundCloudComment, SoundCloudStreams, SoundCloudToken, SoundCloudPaginatedResponse, SoundCloudMe, SoundCloudConnection, SoundCloudWebProfile, SoundCloudActivity, SoundCloudActivitiesResponse, SoundCloudError
 
 ## Related packages
-- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.15.0+)
+- soundcloud-api-ts — TypeScript-first SoundCloud API client (dependency, v1.16.0+)
 - soundcloud-widget-react — React embed. Pass `trackId={track.id}`, not `SoundCloudWidget` / permalink.
 
 ## Links

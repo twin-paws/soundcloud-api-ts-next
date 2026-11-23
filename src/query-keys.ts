@@ -51,4 +51,7 @@ export const scKeys = {
   relatedUsers: (id: string | number) => ["sc", "user", String(id), "related"] as const,
   meFeed: () => ["sc", "me", "feed"] as const,
   meRecentlyPlayed: () => ["sc", "me", "recently-played"] as const,
+
+  /** Key for a system playlist (track / artist station). */
+  systemPlaylist: (id: string) => ["sc", "system-playlist", id] as const,
 };

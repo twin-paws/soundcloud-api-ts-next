@@ -192,12 +192,14 @@ All hooks return `{ data, loading, error }`.
 | `useUserFollowings(id)` | User's followings |
 | `useRelatedUsers(id)` | Related artists |
 | `useUserReposts(id)` | User's track reposts |
+| `useUserLikesSystemPlaylists(id)` | User's liked stations |
 
 ### Playlists
 
 | Hook | Description |
 |------|-------------|
 | `usePlaylist(id)` | Single playlist |
+| `useSystemPlaylist(id)` | Track / artist station — pass `track.station_urn` or `user.station_urn` |
 | `usePlaylistSearch(query)` | Search playlists |
 | `usePlaylistTracks(id)` | Playlist tracks |
 
@@ -393,6 +395,7 @@ Available after login. Automatically pass the user's access token.
 | `useMe()` | Current user profile |
 | `useMeTracks()` | Your tracks |
 | `useMeLikes()` | Your liked tracks |
+| `useMeLikesSystemPlaylists()` | Your liked stations |
 | `useMePlaylists()` | Your playlists |
 | `useMeFollowings()` | Who you follow |
 | `useMeFollowers()` | Your followers |
@@ -542,6 +545,7 @@ The catch-all handler exposes these routes automatically:
 | `/users/:id/followers` | GET | User followers |
 | `/users/:id/followings` | GET | User followings |
 | `/playlists/:id` | GET | Playlist details |
+| `/system-playlists/:id` | GET | Track / artist station (optional `?access=`) |
 | `/playlists/:id/tracks` | GET | Playlist tracks |
 | `/playlists/:id/like` | POST/DELETE | Like/unlike (auth) |
 | `/playlists/:id/repost` | POST/DELETE | Repost/unrepost (auth) |

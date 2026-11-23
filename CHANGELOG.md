@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-11-22
+
+Matches `soundcloud-api-ts@^1.16.0` (system playlists / stations). From this release the minor version tracks `soundcloud-api-ts` (1.16.x wraps 1.16.x), so 1.15.0 is skipped.
+
+### Added
+
+- **`useSystemPlaylist(id)`** — fetch a track or artist station. Pass a track's or user's `station_urn`.
+- **`useUserLikesSystemPlaylists(userId)`**, **`useMeLikesSystemPlaylists()`** — liked stations.
+- **Routes:** `GET /system-playlists/:id` (optional `?access=`), `GET /users/:id/likes/system-playlists`, `GET /me/likes/system-playlists` (auth).
+- **`scFetchers.systemPlaylist(id, token?)`** and **`scKeys.systemPlaylist(id)`**.
+- **`SoundCloudSystemPlaylist`** type re-exported; `SoundCloudTrack` and `SoundCloudUser` now carry optional `station_urn`.
+
+### Changed
+
+- Bumped `soundcloud-api-ts` to `^1.16.0`.
+- Dev tooling: TypeScript 6.0, Vitest 5, tsup 9, Vite 8. No runtime changes.
+
 ## [1.14.0] - 2026-08-17
 
 Matches `soundcloud-api-ts@^1.15.0` (official OpenAPI surface, CC refresh reuse, search `limit`/`access`).

@@ -4,6 +4,7 @@ import { SoundCloudProvider } from '../../client/provider.js';
 import { useMe } from '../../client/hooks/useMe.js';
 import { useMeTracks } from '../../client/hooks/useMeTracks.js';
 import { useMeLikes } from '../../client/hooks/useMeLikes.js';
+import { useMeLikesSystemPlaylists } from '../../client/hooks/useMeLikesSystemPlaylists.js';
 import { useMePlaylists } from '../../client/hooks/useMePlaylists.js';
 import { useMeFollowings } from '../../client/hooks/useMeFollowings.js';
 import { useMeFollowers } from '../../client/hooks/useMeFollowers.js';
@@ -78,6 +79,7 @@ function testMeHook(name: string, hook: () => any) {
 testMeHook('useMe', useMe);
 testMeHook('useMeTracks', useMeTracks);
 testMeHook('useMeLikes', useMeLikes);
+testMeHook('useMeLikesSystemPlaylists', useMeLikesSystemPlaylists);
 testMeHook('useMePlaylists', useMePlaylists);
 testMeHook('useMeFollowings', useMeFollowings);
 testMeHook('useMeFollowers', useMeFollowers);

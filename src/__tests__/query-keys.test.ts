@@ -20,6 +20,10 @@ describe('scKeys', () => {
     expect(scKeys.user(42)).toEqual(['sc', 'user', '42']);
   });
 
+  it('systemPlaylist returns correct key', () => {
+    expect(scKeys.systemPlaylist('track-stations:1')).toEqual(['sc', 'system-playlist', 'track-stations:1']);
+  });
+
   it('playlist returns correct key', () => {
     expect(scKeys.playlist(99)).toEqual(['sc', 'playlist', '99']);
   });

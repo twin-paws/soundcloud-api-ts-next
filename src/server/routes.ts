@@ -269,6 +269,13 @@ async function handleRoute(
     return jsonResponse(result);
   }
 
+  // GET /me/likes/system-playlists
+  if (pathname === "/me/likes/system-playlists" && method === "GET") {
+    if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
+    const result = await getClient().me.getLikesSystemPlaylists(undefined, { token: userToken });
+    return jsonResponse(result);
+  }
+
   // GET /me/playlists
   if (pathname === "/me/playlists" && method === "GET") {
     if (!userToken) return routeError("UNAUTHORIZED", "Authorization required", 401, requestId);
@@ -480,6 +487,17 @@ async function handleRoute(
     return jsonResponse(track);
   }
 
+  // /system-playlists/:id (track / artist stations; id is a URN or its identifier portion)
+  const systemPlaylistMatch = pathname.match(/^\/system-playlists\/([^/]+)$/);
+  if (systemPlaylistMatch) {
+    const access = url.searchParams.get("access") ?? undefined;
+    const result = await getClient().playlists.getSystemPlaylist(
+      decodeURIComponent(systemPlaylistMatch[1]),
+      { token, access },
+    );
+    return jsonResponse(result);
+  }
+
   // /playlists/:id/tracks
   const playlistTracksMatch = pathname.match(/^\/playlists\/([^/]+)\/tracks$/);
   if (playlistTracksMatch) {
@@ -517,6 +535,13 @@ async function handleRoute(
   const userLikesMatch = pathname.match(/^\/users\/([^/]+)\/likes\/tracks$/);
   if (userLikesMatch) {
     const result = await getClient().users.getLikesTracks(userLikesMatch[1], undefined, undefined, { token });
+    return jsonResponse(result);
+  }
+
+  // /users/:id/likes/system-playlists
+  const userLikesSystemPlaylistsMatch = pathname.match(/^\/users\/([^/]+)\/likes\/system-playlists$/);
+  if (userLikesSystemPlaylistsMatch) {
+    const result = await getClient().users.getLikesSystemPlaylists(userLikesSystemPlaylistsMatch[1], undefined, { token });
     return jsonResponse(result);
   }
 
@@ -667,6 +692,14 @@ export function createSoundCloudRoutes(config: SoundCloudRoutesConfig) {
     async getPlaylist(playlistId: string | number) {
       const token = await ensureToken();
       return getClient().playlists.getPlaylist(playlistId, { token });
+    },
+    async getSystemPlaylist(id: string, options?: { access?: string }) {
+      const token = await ensureToken();
+      return getClient().playlists.getSystemPlaylist(id, { token, ...options });
+    },
+    async getUserLikesSystemPlaylists(userId: string | number) {
+      const token = await ensureToken();
+      return getClient().users.getLikesSystemPlaylists(userId, undefined, { token });
     },
     async getPlaylistTracks(playlistId: string | number) {
       const token = await ensureToken();

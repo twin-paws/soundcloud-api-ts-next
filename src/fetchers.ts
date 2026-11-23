@@ -4,6 +4,7 @@ import type {
   SoundCloudTrack,
   SoundCloudUser,
   SoundCloudPlaylist,
+  SoundCloudSystemPlaylist,
   SoundCloudPaginatedResponse,
   SoundCloudMe,
   SoundCloudConnection,
@@ -222,6 +223,19 @@ export const scFetchers = {
 
   async meFeed(token: string, limit?: number): Promise<SoundCloudActivitiesResponse> {
     return getClient().me.getFeed(limit, { token });
+  },
+
+  /**
+   * Fetch a system playlist (track / artist station).
+   * @param id - Full URN or identifier portion (e.g. a track's `station_urn`).
+   * @param token - Optional user OAuth token.
+   */
+  async systemPlaylist(
+    id: string,
+    token?: string,
+  ): Promise<SoundCloudSystemPlaylist> {
+    const t = token ?? (await ensureClientToken());
+    return getClient().playlists.getSystemPlaylist(id, { token: t });
   },
 
   async meRecentlyPlayed(token: string): Promise<SoundCloudTrack[]> {
