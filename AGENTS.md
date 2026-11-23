@@ -83,6 +83,10 @@ pnpm docs        # TypeDoc → API docs site
 
 Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 
+**Versioning:** from 1.16.0 the major.minor tracks `soundcloud-api-ts` (1.16.x here wraps 1.16.x there); patch numbers are independent. When the client ships a new minor, release the matching minor here, skipping numbers if needed (1.15.0 was skipped).
+
+**Docs:** `pnpm docs:generate` writes TypeDoc HTML into `docs/` (gitignored) next to the tracked markdown guides. `cleanOutputDir` is `false` in `typedoc.json` so it does not delete those guides.
+
 ## Gotchas
 
 1. **Two entry points** — `soundcloud-api-ts-next` (client hooks) and `soundcloud-api-ts-next/server` (route handlers). Don't import server code in client components.
