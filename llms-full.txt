@@ -1,4 +1,4 @@
-# soundcloud-api-ts-next v1.15.0
+# soundcloud-api-ts-next v1.16.0
 
 > React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
@@ -75,7 +75,7 @@ function useMeRecentlyPlayed(): HookResult<SoundCloudTrack[]>
 ```
 
 ```ts
-// System playlists (stations) — 1.15.0. id is a full URN or its identifier portion; use track.station_urn / user.station_urn.
+// System playlists (stations) — 1.16.0. id is a full URN or its identifier portion; use track.station_urn / user.station_urn.
 function useSystemPlaylist(id: string | null | undefined): HookResult<SoundCloudSystemPlaylist>
 function useUserLikesSystemPlaylists(userId: string | number | undefined): HookResult<SoundCloudSystemPlaylist[]>
 function useMeLikesSystemPlaylists(): HookResult<SoundCloudSystemPlaylist[]>

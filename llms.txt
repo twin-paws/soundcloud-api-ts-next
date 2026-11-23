@@ -1,4 +1,4 @@
-# soundcloud-api-ts-next v1.15.0
+# soundcloud-api-ts-next v1.16.0
 
 > React hooks and Next.js API route handlers for the SoundCloud API. Client secrets stay on the server.
 
@@ -137,7 +137,7 @@ Wired in 1.14.0 (hooks + routes + scFetchers):
 - `scFetchers.tracks(ids[])` uses batch `getTracks` (max 200)
 - `scFetchers.meConnections(token)` — linked social accounts
 
-Wired in 1.15.0:
+Wired in 1.16.0:
 - system playlists (stations): hooks above; routes `GET /system-playlists/:id` (optional `?access=`), `/users/:id/likes/system-playlists`, `/me/likes/system-playlists` (auth)
 - `scFetchers.systemPlaylist(id, token?)` and `scKeys.systemPlaylist(id)`
 - `sc.raw.get('/any/endpoint/{id}', params)` — escape hatch on the underlying client (upload, storefront)

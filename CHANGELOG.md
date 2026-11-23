@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.15.0] - 2026-11-22
+## [1.16.0] - 2026-11-22
 
-Matches `soundcloud-api-ts@^1.16.0` (system playlists / stations).
+Matches `soundcloud-api-ts@^1.16.0` (system playlists / stations). From this release the minor version tracks `soundcloud-api-ts` (1.16.x wraps 1.16.x), so 1.15.0 is skipped.
 
 ### Added
 
