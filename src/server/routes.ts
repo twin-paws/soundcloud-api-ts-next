@@ -41,9 +41,9 @@ function getClient(): SoundCloudClient {
 // PKCE auth manager — initialized lazily when redirectUri is configured
 let authManager: SCAuthManager | null = null;
 
-function getAuthManager(): SCAuthManager {
+function getAuthManager(): SCAuthManager | null {
+  if (!ctx.config.redirectUri) return null;
   if (!authManager) {
-    if (!ctx.config.redirectUri) throw new Error("redirectUri not configured");
     authManager = new SCAuthManager({
       clientId: ctx.config.clientId,
       clientSecret: ctx.config.clientSecret,
@@ -100,7 +100,7 @@ function getUserTokenFromHeaders(headers: Headers): string | null {
 
 /** Extract the first path segment (e.g. "/tracks/123" → "tracks") */
 function routePrefix(pathname: string): string {
-  return pathname.replace(/^\//, "").split("/")[0] ?? "";
+  return pathname.replace(/^\//, "").split("/")[0];
 }
 
 /** Apply CORS headers to a response (returns new Response). */
@@ -159,16 +159,18 @@ async function handleRoute(
 
   // GET /auth/login
   if (pathname === "/auth/login" && method === "GET") {
-    if (!ctx.config.redirectUri) {
+    const auth = getAuthManager();
+    if (!auth) {
       return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
-    const { url: authUrl, state } = await getAuthManager().initLogin();
+    const { url: authUrl, state } = await auth.initLogin();
     return jsonResponse({ url: authUrl, state });
   }
 
   // GET /auth/callback?code=...&state=...
   if (pathname === "/auth/callback" && method === "GET") {
-    if (!ctx.config.redirectUri) {
+    const auth = getAuthManager();
+    if (!auth) {
       return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
     const code = url.searchParams.get("code");
@@ -177,7 +179,7 @@ async function handleRoute(
       return routeError("BAD_REQUEST", "Missing code or state parameter", 400, requestId);
     }
     try {
-      const tokens = await getAuthManager().exchangeCode(code, state);
+      const tokens = await auth.exchangeCode(code, state);
       return jsonResponse(tokens);
     } catch {
       return routeError("BAD_REQUEST", "Invalid or expired state", 400, requestId);
@@ -186,7 +188,8 @@ async function handleRoute(
 
   // POST /auth/refresh
   if (pathname === "/auth/refresh" && method === "POST") {
-    if (!ctx.config.redirectUri) {
+    const auth = getAuthManager();
+    if (!auth) {
       return routeError("INTERNAL_ERROR", "redirectUri not configured", 500, requestId);
     }
     const refreshTokenValue = body?.refresh_token;
@@ -194,7 +197,7 @@ async function handleRoute(
       return routeError("BAD_REQUEST", "Missing refresh_token", 400, requestId);
     }
     try {
-      const tokens = await getAuthManager().refreshToken(refreshTokenValue);
+      const tokens = await auth.refreshToken(refreshTokenValue);
       return jsonResponse(tokens);
     } catch {
       return routeError("BAD_REQUEST", "Failed to refresh token", 400, requestId);
