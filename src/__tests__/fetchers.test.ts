@@ -16,6 +16,7 @@ const mockClient = {
   },
   playlists: {
     getPlaylist: vi.fn().mockResolvedValue({ id: 3, title: 'Playlist' }),
+    getSystemPlaylist: vi.fn().mockResolvedValue({ urn: 'soundcloud:system-playlists:track-stations:1', tracks: [] }),
   },
   search: {
     tracks: vi.fn().mockResolvedValue({ collection: [{ id: 1 }], next_href: null }),
@@ -72,6 +73,14 @@ describe('configureFetchers', () => {
   it('fetches a user', async () => {
     const result = await scFetchers.user(2);
     expect(result.username).toBe('user');
+  });
+
+  it('fetches a system playlist with the client token or a user token', async () => {
+    const result = await scFetchers.systemPlaylist('track-stations:1');
+    expect(result.urn).toBe('soundcloud:system-playlists:track-stations:1');
+    expect(mockClient.playlists.getSystemPlaylist).toHaveBeenLastCalledWith('track-stations:1', { token: 'cc_tok' });
+    await scFetchers.systemPlaylist('track-stations:1', 'user_tok');
+    expect(mockClient.playlists.getSystemPlaylist).toHaveBeenLastCalledWith('track-stations:1', { token: 'user_tok' });
   });
 
   it('fetches a playlist', async () => {

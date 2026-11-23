@@ -4,6 +4,8 @@ import { SoundCloudProvider } from '../../client/provider.js';
 import { usePlaylist } from '../../client/hooks/usePlaylist.js';
 import { usePlaylistSearch } from '../../client/hooks/usePlaylistSearch.js';
 import { usePlaylistTracks } from '../../client/hooks/usePlaylistTracks.js';
+import { useSystemPlaylist } from '../../client/hooks/useSystemPlaylist.js';
+import { useUserLikesSystemPlaylists } from '../../client/hooks/useUserLikesSystemPlaylists.js';
 import type { ReactNode } from 'react';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -30,6 +32,52 @@ function mockOk(data: unknown) {
 function mockFail(s: number) {
   fetchMock.mockResolvedValueOnce({ ok: false, status: s, json: async () => ({}) });
 }
+
+describe('useSystemPlaylist', () => {
+  const urn = 'soundcloud:system-playlists:track-stations:1';
+
+  it('fetches a station by URN', async () => {
+    mockOk({ urn, title: 'Station', tracks: [] });
+    const { result } = renderHook(() => useSystemPlaylist(urn), { wrapper });
+    await waitFor(() => expect(result.current.data?.title).toBe('Station'));
+    expect(fetchMock.mock.calls[0][0]).toBe(`/api/sc/system-playlists/${urn}`);
+  });
+
+  it('skips when the id is undefined or null', () => {
+    const a = renderHook(() => useSystemPlaylist(undefined), { wrapper });
+    const b = renderHook(() => useSystemPlaylist(null), { wrapper });
+    expect(a.result.current.data).toBeNull();
+    expect(b.result.current.data).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces errors', async () => {
+    mockFail(404);
+    const { result } = renderHook(() => useSystemPlaylist(urn), { wrapper });
+    await waitFor(() => expect(result.current.error).toBeTruthy());
+  });
+});
+
+describe('useUserLikesSystemPlaylists', () => {
+  it('unwraps the paginated collection', async () => {
+    mockOk({ collection: [{ urn: 'a' }], next_href: null });
+    const { result } = renderHook(() => useUserLikesSystemPlaylists(42), { wrapper });
+    await waitFor(() => expect(result.current.data).toEqual([{ urn: 'a' }]));
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/sc/users/42/likes/system-playlists');
+  });
+
+  it('accepts a bare array response', async () => {
+    mockOk([{ urn: 'b' }]);
+    const { result } = renderHook(() => useUserLikesSystemPlaylists(42), { wrapper });
+    await waitFor(() => expect(result.current.data).toEqual([{ urn: 'b' }]));
+  });
+
+  it('skips when undefined', () => {
+    const { result } = renderHook(() => useUserLikesSystemPlaylists(undefined), { wrapper });
+    expect(result.current.data).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
 
 describe('usePlaylist', () => {
   it('ignores AbortError on unmount', async () => {

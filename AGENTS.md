@@ -94,9 +94,9 @@ Uses **Trusted Publishing** via GitHub Releases (same as soundcloud-api-ts).
 7. **Search `limit`** — `useTrackSearch(q, { limit: 20 })` is page size. Do not pass limit as the second argument to `sc.search.tracks` (that is `pageNumber`).
 8. **Upstream errors** — `SoundCloudError.status` / `errorCode` / `isInvalidGrant`. Route envelopes now include `errorCode`.
 
-## Underlying Client (soundcloud-api-ts v1.15.0+)
+## Underlying Client (soundcloud-api-ts v1.16.0+)
 
-This package requires `soundcloud-api-ts ^1.15.0`. Client-credentials tokens include a `refresh_token` — this package reuses it (do not mint a new CC token every request). Search `limit` is 1–200 (default 10); track search defaults to `access=playable`.
+This package requires `soundcloud-api-ts ^1.16.0`. Stations: tracks and users may carry `station_urn`; pass it to `useSystemPlaylist(id)` or `GET /system-playlists/:id`. Client-credentials tokens include a `refresh_token` — this package reuses it (do not mint a new CC token every request). Search `limit` is 1–200 (default 10); track search defaults to `access=playable`.
 
 Key additions available to this package:
 

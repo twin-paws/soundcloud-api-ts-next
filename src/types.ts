@@ -5,6 +5,8 @@ export type {
   SoundCloudUser,
   /** A SoundCloud playlist containing track references and metadata. */
   SoundCloudPlaylist,
+  /** A system playlist (track station, artist station) with its visible tracks. */
+  SoundCloudSystemPlaylist,
   /** A comment on a SoundCloud track with body text, timestamp, and author info. */
   SoundCloudComment,
   /** Stream URLs for a SoundCloud track (HLS, progressive MP3, etc.). */

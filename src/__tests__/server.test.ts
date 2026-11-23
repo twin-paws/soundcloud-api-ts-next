@@ -25,12 +25,14 @@ const mockClient = {
     getPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
     getLikesTracks: vi.fn().mockResolvedValue({ collection: [] }),
     getLikesPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
+    getLikesSystemPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
     getRelated: vi.fn().mockResolvedValue({ collection: [] }),
     getRepostsTracks: vi.fn().mockResolvedValue({ collection: [] }),
     getRepostsPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
   },
   playlists: {
     getPlaylist: vi.fn().mockResolvedValue({ id: 3, title: 'Playlist' }),
+    getSystemPlaylist: vi.fn().mockResolvedValue({ urn: 'soundcloud:system-playlists:track-stations:1', tracks: [] }),
     getTracks: vi.fn().mockResolvedValue({ collection: [] }),
     getReposts: vi.fn().mockResolvedValue({ collection: [] }),
   },
@@ -46,6 +48,7 @@ const mockClient = {
     getMe: vi.fn().mockResolvedValue({ id: 1, username: 'me' }),
     getTracks: vi.fn().mockResolvedValue({ collection: [] }),
     getLikesTracks: vi.fn().mockResolvedValue({ collection: [] }),
+    getLikesSystemPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
     getPlaylists: vi.fn().mockResolvedValue({ collection: [] }),
     getFollowings: vi.fn().mockResolvedValue({ collection: [] }),
     getFollowers: vi.fn().mockResolvedValue({ collection: [] }),
@@ -336,6 +339,44 @@ describe('createSoundCloudRoutes', () => {
   it('GET /playlists/:id', async () => {
     const res = await handle(makeReq('/playlists/99'));
     expect(res.status).toBe(200);
+  });
+
+  it('GET /system-playlists/:id passes the URN and access filter', async () => {
+    const urn = 'soundcloud:system-playlists:track-stations:1';
+    const res = await handle(makeReq(`/system-playlists/${urn}?access=playable`));
+    expect(res.status).toBe(200);
+    expect(mockClient.playlists.getSystemPlaylist).toHaveBeenLastCalledWith(urn, { token: 'tok', access: 'playable' });
+  });
+
+  it('GET /system-playlists/:id decodes an encoded id', async () => {
+    const res = await handle(makeReq('/system-playlists/track-stations%3A1'));
+    expect(res.status).toBe(200);
+    expect(mockClient.playlists.getSystemPlaylist).toHaveBeenLastCalledWith('track-stations:1', { token: 'tok', access: undefined });
+  });
+
+  it('GET /users/:id/likes/system-playlists', async () => {
+    const res = await handle(makeReq('/users/42/likes/system-playlists'));
+    expect(res.status).toBe(200);
+    expect(mockClient.users.getLikesSystemPlaylists).toHaveBeenLastCalledWith('42', undefined, { token: 'tok' });
+  });
+
+  it('GET /me/likes/system-playlists with auth', async () => {
+    const res = await handle(makeAuthReq('/me/likes/system-playlists'));
+    expect(res.status).toBe(200);
+    expect(mockClient.me.getLikesSystemPlaylists).toHaveBeenLastCalledWith(undefined, { token: 'user_tok' });
+  });
+
+  it('GET /me/likes/system-playlists requires auth', async () => {
+    const res = await handle(makeReq('/me/likes/system-playlists'));
+    expect(res.status).toBe(401);
+  });
+
+  it('direct helpers: getSystemPlaylist and getUserLikesSystemPlaylists', async () => {
+    const routes = createSoundCloudRoutes({ clientId: 'id', clientSecret: 'secret' });
+    await routes.getSystemPlaylist('track-stations:1', { access: 'playable' });
+    expect(mockClient.playlists.getSystemPlaylist).toHaveBeenLastCalledWith('track-stations:1', { token: 'tok', access: 'playable' });
+    await routes.getUserLikesSystemPlaylists(42);
+    expect(mockClient.users.getLikesSystemPlaylists).toHaveBeenLastCalledWith(42, undefined, { token: 'tok' });
   });
 
   it('GET /playlists/:id/tracks', async () => {
